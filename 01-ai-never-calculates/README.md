@@ -47,7 +47,7 @@ It runs the same report two ways:
 
 To use a real model, replace `stand_in_llm_writes_summary()` with a call to your provider, sending the prompt the script prints.
 
-*Status: written for this lesson; test run pending (see the repo's change log).*
+*Tested with Python 3.12.10 on Windows, 14 Oct 2026.*
 
 ## Common mistakes
 
