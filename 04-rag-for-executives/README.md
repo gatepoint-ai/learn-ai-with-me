@@ -48,7 +48,7 @@ It answers three questions **with a citation** — and declines the fourth (*"Wh
 
 To keep it dependency-free, the example searches with simple keyword scoring (TF-IDF). Real systems use embeddings and often combine both — that's a later lesson.
 
-*Status: written for this lesson; test run pending (see the repo's change log).*
+*Tested with Python 3.12.10 on Windows, 14 Oct 2026.*
 
 ## Common mistakes
 
