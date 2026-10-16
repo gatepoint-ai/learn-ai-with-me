@@ -1,4 +1,4 @@
-# 01 · The AI never calculates
+# 09 · The AI never calculates
 
 > **The idea:** let SQL produce every number. Give the language model finished figures and ask it only to write the words around them.
 
@@ -64,4 +64,4 @@ To use a real model, replace `stand_in_llm_writes_summary()` with a call to your
 
 ---
 
-📣 LinkedIn post for this lesson: *link added after publishing* · Next: [02 · Governance is architecture](../02-governance-is-architecture/)
+📣 LinkedIn post for this lesson: *link added after publishing* · Back to [all lessons](../README.md)

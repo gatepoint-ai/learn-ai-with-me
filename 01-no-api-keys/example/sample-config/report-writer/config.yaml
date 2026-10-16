@@ -1,0 +1,13 @@
+# report-writer - drafts executive briefings (made-up service)
+service: report-writer
+auth: workload-identity
+service_account: report-writer-sa
+model:
+  name: briefing-model
+
+# Document loading - a section nobody changed from the vendor default.
+# It still asks for a key at runtime, so every upload fails on a platform
+# that has none.
+ingest:
+  model: default-model
+  api_key: ${MODEL_API_KEY}

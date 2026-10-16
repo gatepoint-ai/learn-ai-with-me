@@ -1,0 +1,4 @@
+Handover notes - invoice-summary (made-up example)
+
+To test locally, use the team key: demo-not-a-real-key-4f9c2a7e8b1d6c3f
+Ask the platform team if it stops working.
