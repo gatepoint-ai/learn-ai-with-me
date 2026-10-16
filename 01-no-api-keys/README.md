@@ -12,7 +12,7 @@ A key is a password that never expires on its own. It gets copied — into a sec
 
 ## The decision
 
-On the last AI platform I worked on — Google Cloud, with Kubernetes for the services and Vertex AI for the models — **there was no API key**:
+On the last AI platform I worked on — Google Cloud, with Kubernetes for the services and Gemini Enterprise Agent Platform (formerly Vertex AI) for the models — **there was no API key**:
 
 1. **Every service runs as its own Google identity** (on Kubernetes this is *Workload Identity Federation for GKE*).
 2. **That identity is granted one role:** permission to call the model. Not the database, not the storage, not the other services.
@@ -20,8 +20,6 @@ On the last AI platform I worked on — Google Cloud, with Kubernetes for the se
 4. **Access is a line in the architecture document**, reviewable by security and auditable after the fact.
 
 It wasn't free. When we started loading documents into the knowledge base, a default setting we had never touched still expected a key — and every upload failed. The fix was small. Finding it took longer, because the error message pointed at a key nobody should have had. The lesson: **an identity-only platform also needs a check that no component quietly expects a key.** That's what the example below does.
-
-*Naming note: Google now presents Vertex AI as part of Gemini Enterprise Agent Platform; the identity model is the same.*
 
 ## The trade-off
 
