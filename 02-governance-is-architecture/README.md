@@ -8,7 +8,7 @@ Companion to the LinkedIn article *"The Best AI Safety Control I've Seen Was a M
 
 | # | Decision | The question it answers | Lesson |
 |---|---|---|---|
-| 1 | **The AI never calculates** | Can the model invent a number? | [01](../01-ai-never-calculates/) |
+| 1 | **The AI never calculates** | Can the model invent a number? | [09](../09-ai-never-calculates/) |
 | 2 | **A catalogue, not a keyboard** | Can the model write any query it likes against production data? | coming soon |
 | 3 | **Weight the rules above the model** | What happens when the model gets worse? | — |
 | 4 | **Every score ships with its reasons** | Can the person who must act understand *why*? | — |
@@ -39,4 +39,4 @@ A one-page checklist:
 
 ---
 
-📣 LinkedIn article: *link added after publishing* · Previous: [01](../01-ai-never-calculates/) · Next: [03 · The data decides the technique](../03-the-data-decides-the-technique/)
+📣 LinkedIn article: *link added after publishing* · Previous: [01 · No API keys](../01-no-api-keys/) · Next: [03 · The data decides the technique](../03-the-data-decides-the-technique/)

@@ -1,6 +1,6 @@
 # Resources — free courses and official documentation
 
-*Every link below was checked and opened on 14 Oct 2026. If one breaks, please open an issue.*
+*Every link below was checked and opened when it was added (14 and 16 Oct 2026). If one breaks, please open an issue.*
 
 ## Courses — foundations
 
@@ -36,6 +36,9 @@
 | [AI Risk Management Framework](https://www.nist.gov/itl/ai-risk-management-framework) | NIST | The most widely used framework for managing AI risk. |
 | [Secure AI Framework (SAIF)](https://saif.google/) | Google | Google's practical guide to securing AI systems. |
 | [OWASP Top 10 for LLM applications](https://genai.owasp.org/llm-top-10/) | OWASP | The top security risks in LLM apps — prompt injection, data leakage and more. |
+| [About Workload Identity Federation for GKE](https://docs.cloud.google.com/kubernetes-engine/docs/concepts/workload-identity) | Google Cloud | How services on Kubernetes call Google APIs as an identity, with no stored key. See lesson 01. |
+| [Best practices for using service accounts securely](https://docs.cloud.google.com/iam/docs/best-practices-service-accounts) | Google Cloud | One identity per service, least privilege — the rules behind "no API keys". |
+| [Best practices for managing service account keys](https://docs.cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys) | Google Cloud | Why to avoid long-lived keys, and how to handle them when you cannot. |
 
 ## Data platforms used in the lessons
 

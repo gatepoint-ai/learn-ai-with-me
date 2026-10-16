@@ -1,0 +1,7 @@
+# invoice-summary - writes a weekly summary of unpaid invoices (made-up service)
+service: invoice-summary
+model:
+  name: summary-model
+  # "Just for the prototype" - and then it shipped.
+  api_key: "demo-not-a-real-key-4f9c2a7e8b1d6c3f"
+schedule: "every Monday 07:00"

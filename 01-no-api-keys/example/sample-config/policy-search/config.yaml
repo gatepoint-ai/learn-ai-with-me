@@ -1,0 +1,7 @@
+# policy-search - answers questions over policy documents (made-up service)
+service: policy-search
+auth: workload-identity
+service_account: policy-search-sa      # one identity per service, one role
+model:
+  name: answer-model
+  embeddings: embedding-model

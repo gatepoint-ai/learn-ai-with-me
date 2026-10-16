@@ -10,10 +10,11 @@ The lessons are about **decisions and trade-offs** — where AI belongs, where i
 
 | # | Lesson | The idea in one line | Example |
 |---|---|---|---|
-| 01 | [The AI never calculates](01-ai-never-calculates/) | Numbers come from SQL; the model only writes the words around them. | Python, no installs |
+| 01 | [No API keys](01-no-api-keys/) | Give each AI service an identity, not a key: nothing stored, nothing to leak. | Python, no installs |
 | 02 | [Governance is architecture](02-governance-is-architecture/) | The AI governance that matters is a handful of design decisions made early. | Reading guide |
 | 03 | [The data decides the technique](03-the-data-decides-the-technique/) | Before choosing a model, check whether the answer already exists in your data. | Decision guide |
 | 04 | [RAG for executives](04-rag-for-executives/) | Find the right pages first, answer only from them, cite the source. | Python, no installs |
+| 09 | [The AI never calculates](09-ai-never-calculates/) | Numbers come from SQL; the model only writes the words around them. | Python, no installs |
 
 *New lessons are added every week. Watch or star the repo to follow along.*
 
