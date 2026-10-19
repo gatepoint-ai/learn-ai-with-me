@@ -1,67 +1,85 @@
 {
-  "generated_at": "2026-08-25T16:19:41",
+  "generated_at": "2026-10-19T19:33:12",
   "seed": 20260825,
   "seed_days": 30,
-  "start_date": "2026-07-27",
-  "end_date": "2026-08-25",
-  "event_count": 51997,
+  "start_date": "2026-09-20",
+  "end_date": "2026-10-19",
+  "event_count": 48215,
   "faults": [
     {
       "id": "feed_outage",
       "kind": "feed_outage",
       "description": "Ingestion partially failed: the site reported ~15% of its normal event volume for one day.",
       "expect_probe": "PR-FEED-COMPLETENESS",
+      "expect": "alert",
       "site_id": "SITE-03",
       "customer_class": null,
       "dates": [
-        "2026-08-07"
+        "2026-10-01"
       ],
       "magnitude": "-85% volume vs trailing mean",
-      "affected_rows": 33
+      "affected_rows": 31
     },
     {
       "id": "volume_spike",
       "kind": "volume_spike",
       "description": "Duplicate ingestion: the site reported roughly double its normal event volume for one day.",
       "expect_probe": "PR-VOLUME-SPIKE",
+      "expect": "alert",
       "site_id": "SITE-06",
       "customer_class": null,
       "dates": [
-        "2026-08-14"
+        "2026-10-08"
       ],
       "magnitude": "+110% volume vs trailing mean",
-      "affected_rows": 462
+      "affected_rows": 499
     },
     {
       "id": "misrating",
       "kind": "misrating",
       "description": "Rating engine regression: ENTERPRISE events were billed at the wrong rate for three consecutive days.",
       "expect_probe": "PR-RATING-ACCURACY",
+      "expect": "alert",
       "site_id": null,
       "customer_class": "ENTERPRISE",
       "dates": [
-        "2026-08-17",
-        "2026-08-18",
-        "2026-08-19"
+        "2026-10-11",
+        "2026-10-12",
+        "2026-10-13"
       ],
       "magnitude": "~55% of ENTERPRISE events mis-rated (baseline ~2%)",
-      "affected_rows": 552
+      "affected_rows": 441
     },
     {
       "id": "collection_shift",
       "kind": "collection_shift",
       "description": "Collection process breakdown: the site wrote off a far larger share of revenue than usual across four days.",
       "expect_probe": "PR-COLLECTION-DRIFT",
+      "expect": "alert",
       "site_id": "SITE-05",
       "customer_class": null,
       "dates": [
-        "2026-08-21",
-        "2026-08-22",
-        "2026-08-23",
-        "2026-08-24"
+        "2026-10-15",
+        "2026-10-16",
+        "2026-10-17",
+        "2026-10-18"
       ],
       "magnitude": "write-off share 3% -> ~26%",
-      "affected_rows": 805
+      "affected_rows": 780
+    },
+    {
+      "id": "systemic_dip",
+      "kind": "systemic_dip",
+      "description": "Negative control: every site lost most of its volume on the same day, as on a public holiday. Not a fault -- the rule engine must suppress it rather than raise eight alerts.",
+      "expect_probe": "PR-FEED-COMPLETENESS",
+      "expect": "suppressed",
+      "site_id": null,
+      "customer_class": null,
+      "dates": [
+        "2026-10-04"
+      ],
+      "magnitude": "-70% volume at every site",
+      "affected_rows": 345
     }
   ]
 }
