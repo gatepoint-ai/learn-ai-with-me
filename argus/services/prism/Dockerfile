@@ -24,6 +24,9 @@ RUN pip install -r /app/requirements.txt
 
 COPY services/prism/app /app/app
 
+# Config is part of the image: what was tested is exactly what runs.
+COPY config /config
+
 # Unprivileged: this service holds read credentials for every datastore, so it
 # is the last container that should be able to write to its own filesystem.
 RUN useradd --create-home --uid 10001 argus \

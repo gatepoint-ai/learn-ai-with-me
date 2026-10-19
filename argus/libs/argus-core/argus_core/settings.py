@@ -20,7 +20,7 @@ class LogSettings(BaseSettings):
     model_config = _BASE
     log_level: str = "INFO"
     log_json: bool = True
-    service_name: str = "ra-service"
+    service_name: str = "argus"
 
 
 class ClickHouseSettings(BaseSettings):
@@ -37,9 +37,9 @@ class PostgresSettings(BaseSettings):
     model_config = _BASE
     postgres_host: str = "postgres"
     postgres_port: int = 5432
-    postgres_user: str = "ra"
+    postgres_user: str = "argus"
     postgres_password: str = "dev_password"
-    postgres_database: str = "kpi"
+    postgres_database: str = "pulse"
 
     @property
     def dsn(self) -> str:
@@ -49,21 +49,25 @@ class PostgresSettings(BaseSettings):
         )
 
 
-class VectorSettings(BaseSettings):
-    """The RAG store is a separate instance, so it gets its own prefix."""
+class CodexDbSettings(BaseSettings):
+    """The knowledge store (pgvector) is a separate instance with its own prefix.
+
+    Only Codex instantiates this. The Analyst reaches knowledge through Codex's
+    HTTP API and never holds these credentials.
+    """
 
     model_config = _BASE
-    vector_host: str = "codex-db"
-    vector_port: int = 5432
-    vector_user: str = "ra"
-    vector_password: str = "dev_password"
-    vector_database: str = "knowledge"
+    codex_host: str = "codex-db"
+    codex_port: int = 5432
+    codex_user: str = "argus"
+    codex_password: str = "dev_password"
+    codex_database: str = "codex"
 
     @property
     def dsn(self) -> str:
         return (
-            f"postgresql://{self.vector_user}:{self.vector_password}"
-            f"@{self.vector_host}:{self.vector_port}/{self.vector_database}"
+            f"postgresql://{self.codex_user}:{self.codex_password}"
+            f"@{self.codex_host}:{self.codex_port}/{self.codex_database}"
         )
 
 
@@ -85,8 +89,8 @@ class ServiceUrls(BaseSettings):
     model_config = _BASE
     prism_url: str = "http://prism:8000"
     pulse_url: str = "http://pulse:8000"
-    validator_url: str = "http://sentry:8000"
-    codex_url: str = "http://rag:8000"
+    sentry_url: str = "http://sentry:8000"
+    codex_url: str = "http://codex:8000"
 
 
 class ConfigPaths(BaseSettings):
@@ -102,16 +106,16 @@ class ConfigPaths(BaseSettings):
         return f"{self.config_dir}/kpis"
 
     @property
-    def controls(self) -> str:
-        return f"{self.config_dir}/controls"
+    def rules(self) -> str:
+        return f"{self.config_dir}/rules"
 
     @property
     def collections(self) -> str:
-        return f"{self.config_dir}/knowledge/collections"
+        return f"{self.config_dir}/codex/collections"
 
     @property
     def knowledge_docs(self) -> str:
-        return f"{self.config_dir}/knowledge/docs"
+        return f"{self.config_dir}/codex/docs"
 
 
 class LLMSettings(BaseSettings):

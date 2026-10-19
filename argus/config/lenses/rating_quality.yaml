@@ -43,16 +43,18 @@ sql: >
         ROWS BETWEEN 14 PRECEDING AND 1 PRECEDING
       ) AS baseline_misrated_rate
     FROM (
+      -- `a.` qualifies source columns: ClickHouse would otherwise resolve
+      -- event_count inside misrated_rate to the alias above (a nested sum).
       SELECT
-        usage_date,
-        customer_class,
-        toFloat64(sum(event_count))   AS event_count,
-        toFloat64(sum(misrated_count)) AS misrated_count,
-        if(sum(event_count) > 0,
-           toFloat64(sum(misrated_count)) / toFloat64(sum(event_count)),
+        a.usage_date                     AS usage_date,
+        a.customer_class                 AS customer_class,
+        toFloat64(sum(a.event_count))    AS event_count,
+        toFloat64(sum(a.misrated_count)) AS misrated_count,
+        if(sum(a.event_count) > 0,
+           toFloat64(sum(a.misrated_count)) / toFloat64(sum(a.event_count)),
            0) AS misrated_rate
-      FROM analytics.usage_daily_agg
-      GROUP BY usage_date, customer_class
+      FROM analytics.usage_daily_agg AS a
+      GROUP BY a.usage_date, a.customer_class
     )
   )
 
