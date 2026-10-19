@@ -105,8 +105,19 @@ services:
       postgres: { condition: service_healthy }
       valkey: { condition: service_healthy }
 
+  pulse:
+    <<: *service
+    build:
+      context: .
+      dockerfile: services/pulse/Dockerfile
+    ports:
+      - "127.0.0.1:8001:8000"
+    depends_on:
+      prism: { condition: service_healthy }
+      postgres: { condition: service_healthy }
+
   # --- one-off tasks ------------------------------------------------------------
-  # docker compose run --rm tools bootstrap | migrate | seed | status
+  # docker compose run --rm tools bootstrap | migrate | seed | compute | status
 
   tools:
     <<: *env

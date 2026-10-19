@@ -1,0 +1,18 @@
+# Daily usage volume. Neutral direction: a drop can mean a lost feed, a spike
+# can mean duplicate ingestion -- both are worth a look.
+id: event_volume
+name: Usage event volume
+description: Number of usage events received per day across all sites.
+lens: usage_trends
+date_field: usage_date
+measure:
+  function: sum
+  field: event_count
+unit: events
+direction: neutral
+breakdowns: [site_id, channel]
+anomaly:
+  window: 21
+  z_threshold: 3.0
+  min_history: 10
+tags: [volume, ingestion]

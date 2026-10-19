@@ -7,10 +7,10 @@ in both live data and a policy knowledge base.
 Everything is config-driven: adding a metric, a check, a data view or a dashboard page means adding
 a YAML file, not writing code.
 
-> **Status — October 2026: foundation built, services in progress.** The core library, the data
-> model, the synthetic-data generator and the first service (Prism, the query layer) exist and are
-> covered by 114 passing unit tests. The other five services, the Docker stack and the dashboard
-> are the roadmap below. This README says which parts run today and which are still the plan.
+> **Status — October 2026: the data layer runs end to end.** The Docker stack (ClickHouse,
+> Postgres, pgvector, Valkey), Prism (the query layer) and Pulse (the KPI engine) run on synthetic
+> data with planted faults, covered by 129 unit tests. Sentry, Codex, the Analyst and the
+> dashboard are the roadmap below. This README says which parts run today and which are still the plan.
 
 I'm [Maicon Abreu](https://www.linkedin.com/in/mbdabreu/) — 20 years in revenue assurance and fraud,
 now delivering data and AI programs. Argus is the system I wish I'd had: the controls I've worked
@@ -18,14 +18,32 @@ with for two decades, rebuilt around a language model that is allowed to explain
 to calculate. Each piece is explained in a lesson in this repo —
 see the [lesson index](../README.md).
 
-## Try it now — no Docker, no API key
+## Run the stack — Docker, no API key
+
+```bash
+cd argus
+docker compose up -d --build                 # datastores + Prism + Pulse
+docker compose run --rm tools bootstrap      # migrate, seed 30 days with 4 planted faults, compute KPIs
+
+curl localhost:8001/pulse/v1/kpis            # KPI values and status
+curl localhost:8001/pulse/v1/anomalies       # what the KPI engine flagged, in plain sentences
+```
+
+Ask Prism directly — the query is a description, never SQL:
+
+```bash
+curl -X POST localhost:8000/prism/v1/lenses/site_volume_baseline/query   -H 'content-type: application/json'   -d '{"fields":[{"field":"usage_date"},{"field":"site_id"},{"field":"volume_change_ratio"}],
+       "filters":[{"field":"volume_change_ratio","op":"lt","value":-0.5}]}'
+```
+
+## Try it without Docker — no API key
 
 ```bash
 cd argus
 python -m venv .venv && . .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -e "libs/argus-core[test]" -r services/prism/requirements.txt
+pip install -e "libs/argus-core[test]" -r services/prism/requirements.txt -r services/pulse/requirements.txt
 
-python -m pytest tests                               # 114 unit tests, no network needed
+python -m pytest tests                               # 129 unit tests, no network needed
 python datamodel/seed/generate.py --days 30 --dry-run   # synthetic data + planted faults, no database
 ```
 
@@ -45,8 +63,8 @@ for what it does.
 | Service | Port | Responsibility | Status |
 |---|---|---|---|
 | **prism** | 8000 | Query layer. Serves **lenses** — named, validated SQL views with a closed field list. | ✅ built, tested |
-| **pulse** | 8001 | KPI engine. Computes series, breakdowns, forecasts and anomalies. | 🔜 next |
-| **sentry** | 8002 | Rule engine. Runs **probes** against lenses and raises **alerts**. | 🔜 planned |
+| **pulse** | 8001 | KPI engine. Computes series, breakdowns, forecasts and anomalies. | ✅ built, tested |
+| **sentry** | 8002 | Rule engine. Runs **probes** against lenses and raises **alerts**. | 🔜 next |
 | **codex** | 8004 | Knowledge base. Chunks, embeds and retrieves policy documents. | 🔜 planned (schema ✅) |
 | **analyst** | 8003 | AI agent. Answers questions using lens queries *and* Codex retrieval. | 🔜 planned |
 | **deck** | 3000 | Dashboard. Renders YAML-defined views and panels. | 🔜 planned |
@@ -83,11 +101,14 @@ numbers.
 |---|---|
 | `libs/argus-core/` | Shared core: settings, datastore clients, config schemas, and the SQL compiler with the field whitelist |
 | `services/prism/` | The query layer — FastAPI service, Dockerfile |
+| `services/pulse/` | The KPI engine — pure, tested arithmetic in `engine.py`; reads only through Prism |
+| `config/kpis/` | Five KPI definitions: leakage, volume, collected revenue, mis-rating, unbilled |
+| `docker-compose.yaml` | The local stack; `tools` runs migrations, seeding and computation |
 | `config/lenses/` | Six lens definitions (usage trends, rating quality, collection mix, alerts, …) |
 | `datamodel/migrations/` | Schemas for ClickHouse (analytics), Postgres (pulse, sentry, analyst) and pgvector (codex) |
 | `datamodel/migrate.py` | Migration runner for all three engines |
 | `datamodel/seed/` | Synthetic-data generator and the fault manifest |
-| `tests/unit/` | 114 tests: SQL builder and injection payloads, migration splitter, seeder, Prism API |
+| `tests/unit/` | 129 tests: SQL builder and injection payloads, migration splitter, seeder, Prism API, KPI engine |
 
 ## Concepts
 
@@ -144,8 +165,8 @@ Embeddings are deliberately **independent** of the chat provider: retrieval runs
 
 ## Roadmap
 
-1. **Pulse** — KPI series and anomalies, reading through Prism.
-2. **Docker stack** — `docker-compose` and a `Makefile` (`make up`, `make bootstrap`, `make smoke`).
+1. ✅ **Pulse** — KPI series and anomalies, reading through Prism.
+2. ✅ **Docker stack** — `docker compose` with a `tools` container for migrate / seed / compute.
 3. **Sentry** — probes and alerts; the acceptance test that checks every planted fault is caught.
 4. **Codex** — document chunking, local embeddings, retrieval.
 5. **Analyst** — the AI agent, with data tools and knowledge tools kept apart.

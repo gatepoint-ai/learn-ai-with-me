@@ -1,0 +1,24 @@
+id: unbilled_rate
+name: Unbilled rate
+description: Share of usage events that were never billed.
+lens: usage_trends
+date_field: usage_date
+measure:
+  function: sum
+  field: unbilled_count
+  denominator_function: sum
+  denominator_field: event_count
+  scale: 100
+unit: percent
+direction: lower_is_better
+breakdowns: [site_id, channel]
+# Thresholds sit just above the normal range of the synthetic data (see the
+# seeder). They are demo values, set from this dataset alone.
+thresholds:
+  warning: 3
+  critical: 4
+anomaly:
+  window: 21
+  z_threshold: 3.0
+  min_history: 10
+tags: [billing, quality]
