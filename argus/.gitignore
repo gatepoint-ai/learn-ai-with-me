@@ -1,0 +1,54 @@
+# --- secrets -----------------------------------------------------------------
+# .env holds API keys. .env.example is the committed template.
+.env
+.env.*
+!.env.example
+*-secret.yml
+*-secret.yaml
+credentials.env
+
+# --- python ------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# --- node / next -------------------------------------------------------------
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+.npm/
+
+# --- model caches ------------------------------------------------------------
+# fastembed downloads ONNX weights here. Baked into the image at build time,
+# so a local copy is a cache, never a source.
+.cache/
+models/
+*.onnx
+
+# --- generated data ----------------------------------------------------------
+# The fault manifest IS committed: it is the seeder-to-Sentry contract that the
+# acceptance test reads, so it needs to be reviewable in diffs.
+!datamodel/seed/fault-manifest.json
+*.log
+tmp/
+scratch/
+
+# --- editors / os ------------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*:Zone.Identifier

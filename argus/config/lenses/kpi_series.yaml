@@ -1,0 +1,90 @@
+# =============================================================================
+# kpi_series -- computed KPI values exposed as a queryable lens.
+#
+# Left-joined to the anomaly table so a single query can answer "show me the
+# leakage rate series and mark the days that were flagged". Keeping that join
+# here rather than in the caller means the Deck chart and the Analyst answer
+# agree on which points are anomalous.
+# =============================================================================
+name: kpi_series
+label: KPI Series
+description: >
+  Computed KPI values over time, with the anomaly verdict for each point. Use
+  for questions about metric levels, trends, and which periods were flagged.
+datasource: pulse
+dialect: postgres
+allow_cache: true
+cache_life: 300
+
+tags:
+  - kpi
+  - metrics
+  - trends
+
+sql: >
+  SELECT
+    v.kpi_id                       AS kpi_id,
+    d.name                         AS kpi_name,
+    d.unit                         AS unit,
+    d.direction                    AS direction,
+    v.period                       AS period,
+    v.value                        AS value,
+    v.numerator                    AS numerator,
+    v.denominator                  AS denominator,
+    (an.id IS NOT NULL)            AS is_anomaly,
+    an.expected                    AS expected,
+    an.z_score                     AS z_score,
+    an.severity                    AS anomaly_severity
+  FROM kpi_value AS v
+  JOIN kpi_definition AS d ON d.kpi_id = v.kpi_id
+  LEFT JOIN kpi_anomaly AS an
+    ON an.kpi_id = v.kpi_id AND an.period = v.period
+
+fields:
+  - field: kpi_id
+    data_type: string
+    label: KPI ID
+  - field: kpi_name
+    data_type: string
+    label: KPI
+  - field: unit
+    data_type: string
+    label: Unit
+  - field: direction
+    data_type: string
+    label: Direction
+    description: >
+      higher_is_better, lower_is_better or neutral. Determines whether a rise is
+      good news.
+  - field: period
+    data_type: date
+    label: Period
+  - field: value
+    data_type: float
+    label: Value
+    allow_group_by: false
+  - field: numerator
+    data_type: float
+    label: Numerator
+    description: Populated only for ratio KPIs.
+    allow_group_by: false
+  - field: denominator
+    data_type: float
+    label: Denominator
+    description: Populated only for ratio KPIs.
+    allow_group_by: false
+  - field: is_anomaly
+    data_type: boolean
+    label: Is Anomaly
+  - field: expected
+    data_type: float
+    label: Expected Value
+    description: What the detector predicted for a flagged point.
+    allow_group_by: false
+  - field: z_score
+    data_type: float
+    label: Z-Score
+    allow_group_by: false
+  - field: anomaly_severity
+    data_type: string
+    label: Anomaly Severity

@@ -1,0 +1,120 @@
+# =============================================================================
+# alerts -- Sentry alerts exposed as a queryable lens.
+#
+# Sentry already has a REST endpoint for listing alerts, so why a lens too?
+# Different access patterns. The REST endpoint answers "show me the open alerts"
+# for the Deck. This lens answers "which site accumulated the most critical
+# alerts last month, grouped by rule" -- an aggregate query nobody wants to hand
+# write an endpoint for. Exposing the table as a lens means the Analyst can
+# compose those questions itself.
+#
+# Note the dialect: this is the first lens that is not ClickHouse. The compiler
+# emits %(name)s placeholders and double-quoted identifiers for it, and the same
+# QueryRequest works unchanged against either engine.
+# =============================================================================
+name: alerts
+label: Alerts
+description: >
+  Alerts raised by Sentry rule probes, with severity, subject, observed value
+  and the threshold that was breached. Use for questions about detected
+  problems, their counts, and where they cluster.
+datasource: sentry
+dialect: postgres
+allow_cache: true
+cache_life: 120
+
+tags:
+  - alerts
+  - rules
+  - quality
+
+# Joined to rule/probe so a caller can filter by human-readable rule name
+# instead of memorising probe ids.
+sql: >
+  SELECT
+    a.period               AS period,
+    a.probe_id             AS probe_id,
+    p.name                 AS probe_name,
+    p.rule_id              AS rule_id,
+    r.name                 AS rule_name,
+    r.process              AS process,
+    r.owner                AS owner,
+    a.subject_type         AS subject_type,
+    a.subject_id           AS subject_id,
+    a.alert_type           AS alert_type,
+    a.severity             AS severity,
+    a.status               AS status,
+    a.observed_value       AS observed_value,
+    a.baseline_value       AS baseline_value,
+    a.threshold            AS threshold,
+    a.deviation            AS deviation,
+    a.summary              AS summary,
+    a.detected_at          AS detected_at
+  FROM alert AS a
+  JOIN probe AS p ON p.id = a.probe_id
+  JOIN rule  AS r ON r.id = p.rule_id
+
+fields:
+  - field: period
+    data_type: date
+    label: Period
+  - field: probe_id
+    data_type: string
+    label: Probe ID
+  - field: probe_name
+    data_type: string
+    label: Probe
+  - field: rule_id
+    data_type: string
+    label: Rule ID
+  - field: rule_name
+    data_type: string
+    label: Rule
+  - field: process
+    data_type: string
+    label: Process
+  - field: owner
+    data_type: string
+    label: Owner
+  - field: subject_type
+    data_type: string
+    label: Subject Type
+    description: What the alert is attributed to, e.g. site or customer_class.
+  - field: subject_id
+    data_type: string
+    label: Subject
+  - field: alert_type
+    data_type: integer
+    label: Alert Type
+  - field: severity
+    data_type: string
+    label: Severity
+    description: info, low, medium, high or critical.
+  - field: status
+    data_type: string
+    label: Status
+    description: open or closed.
+  - field: observed_value
+    data_type: float
+    label: Observed Value
+    allow_group_by: false
+  - field: baseline_value
+    data_type: float
+    label: Baseline Value
+    allow_group_by: false
+  - field: threshold
+    data_type: float
+    label: Threshold
+    allow_group_by: false
+  - field: deviation
+    data_type: float
+    label: Deviation
+    allow_group_by: false
+  - field: summary
+    data_type: string
+    label: Summary
+    allow_group_by: false
+  - field: detected_at
+    data_type: datetime
+    label: Detected At
+    allow_group_by: false

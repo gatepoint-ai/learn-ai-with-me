@@ -1,0 +1,89 @@
+# =============================================================================
+# rating_quality -- mis-rating rate per customer class, against its baseline.
+#
+# Grained by customer class rather than site because the rating engine is a
+# shared component: a regression shows up in the class whose tariff changed, at
+# every site at once. Grouping by site would spread one fault across eight weak
+# signals instead of one strong one.
+# =============================================================================
+name: rating_quality
+label: Rating Quality
+description: >
+  Daily share of mis-rated events per customer class, with the trailing 14-day
+  baseline for that class. Feeds the rating accuracy probe.
+datasource: analytics
+dialect: clickhouse
+allow_cache: true
+cache_life: 900
+
+tags:
+  - quality
+  - rating
+  - baseline
+
+sql: >
+  SELECT
+    usage_date,
+    customer_class,
+    event_count,
+    misrated_count,
+    misrated_rate,
+    baseline_misrated_rate,
+    misrated_rate - baseline_misrated_rate AS misrated_rate_drift
+  FROM (
+    SELECT
+      usage_date,
+      customer_class,
+      event_count,
+      misrated_count,
+      misrated_rate,
+      avg(misrated_rate) OVER (
+        PARTITION BY customer_class
+        ORDER BY usage_date
+        ROWS BETWEEN 14 PRECEDING AND 1 PRECEDING
+      ) AS baseline_misrated_rate
+    FROM (
+      SELECT
+        usage_date,
+        customer_class,
+        toFloat64(sum(event_count))   AS event_count,
+        toFloat64(sum(misrated_count)) AS misrated_count,
+        if(sum(event_count) > 0,
+           toFloat64(sum(misrated_count)) / toFloat64(sum(event_count)),
+           0) AS misrated_rate
+      FROM analytics.usage_daily_agg
+      GROUP BY usage_date, customer_class
+    )
+  )
+
+fields:
+  - field: usage_date
+    data_type: date
+    label: Date
+  - field: customer_class
+    data_type: string
+    label: Customer Class
+  - field: event_count
+    data_type: float
+    label: Events
+    allow_group_by: false
+  - field: misrated_count
+    data_type: float
+    label: Mis-rated Events
+    allow_group_by: false
+  - field: misrated_rate
+    data_type: float
+    label: Mis-rated Rate
+    description: Fraction of events billed at the wrong rate, 0.0 to 1.0.
+    allow_group_by: false
+  - field: baseline_misrated_rate
+    data_type: float
+    label: Trailing 14d Mis-rated Rate
+    allow_group_by: false
+  - field: misrated_rate_drift
+    data_type: float
+    label: Rate Drift
+    description: >
+      Difference in absolute rate against the baseline. 0.5 means the error rate
+      is 50 percentage points above normal.
+    allow_group_by: false

@@ -18,6 +18,13 @@ The lessons are about **decisions and trade-offs** — where AI belongs, where i
 
 *New lessons are added every week. Watch or star the repo to follow along.*
 
+## Argus — the app behind the lessons
+
+[`argus/`](argus/) is an AI revenue-assurance platform I'm **building in public**: usage data in,
+KPIs and leakage alerts out, and an AI analyst that explains them without ever computing a number
+itself. The lessons describe a pattern; Argus shows it running. It's being built one service at a
+time — the [status table](argus/README.md#architecture) says what works today.
+
 ## How each lesson is organised
 
 Every lesson folder has the same sections: **the idea** · **the problem** · **the decision and its trade-off** · **diagram** · **try it** · **common mistakes** · **go deeper** (official documentation and free courses).

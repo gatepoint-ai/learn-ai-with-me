@@ -1,0 +1,119 @@
+# =============================================================================
+# usage_trends -- the primary time series lens.
+#
+# Reads the layer-1 aggregate, never the raw fact table, so a query here scans
+# thousands of rows rather than millions. Every dimension the KPI engine breaks
+# down by is exposed as a filterable, groupable field.
+# =============================================================================
+name: usage_trends
+label: Usage Trends
+description: >
+  Daily usage volume and revenue by site, partner, channel, customer class and
+  collection status. The general-purpose lens for volume and revenue questions.
+datasource: analytics
+dialect: clickhouse
+allow_cache: true
+cache_life: 900
+
+tags:
+  - trends
+  - volume
+  - revenue
+
+# Pre-aggregated to the day. The leakage column is derived here so that every
+# consumer computes it the same way -- expected minus collected, once.
+sql: >
+  SELECT
+    usage_date,
+    site_id,
+    site_name,
+    partner_id,
+    partner_name,
+    home_away,
+    channel,
+    customer_class,
+    collection_status,
+    sum(event_count)                                    AS event_count,
+    toFloat64(sum(amount_expected))                     AS amount_expected,
+    toFloat64(sum(amount_billed))                       AS amount_billed,
+    toFloat64(sum(amount_collected))                    AS amount_collected,
+    toFloat64(sum(amount_discount))                     AS amount_discount,
+    toFloat64(sum(amount_expected) - sum(amount_collected)) AS amount_leaked,
+    sum(unbilled_count)                                 AS unbilled_count,
+    sum(misrated_count)                                 AS misrated_count,
+    sum(unmatched_count)                                AS unmatched_count
+  FROM analytics.usage_daily_agg
+  GROUP BY
+    usage_date, site_id, site_name, partner_id, partner_name,
+    home_away, channel, customer_class, collection_status
+
+fields:
+  - field: usage_date
+    data_type: date
+    label: Date
+  - field: site_id
+    data_type: string
+    label: Site ID
+  - field: site_name
+    data_type: string
+    label: Site
+  - field: partner_id
+    data_type: string
+    label: Partner ID
+  - field: partner_name
+    data_type: string
+    label: Partner
+  - field: home_away
+    data_type: string
+    label: Home / Away
+    description: HOME for own-network usage, AWAY for partner-originated usage.
+  - field: channel
+    data_type: string
+    label: Channel
+    description: PREPAID, POSTPAID, INVOICE or CASH.
+  - field: customer_class
+    data_type: string
+    label: Customer Class
+    description: RESIDENTIAL, BUSINESS or ENTERPRISE.
+  - field: collection_status
+    data_type: string
+    label: Collection Status
+    description: COLLECTED, PENDING, WRITTEN_OFF or DISPUTED.
+
+  - field: event_count
+    data_type: integer
+    label: Events
+    allow_group_by: false
+  - field: amount_expected
+    data_type: float
+    label: Expected Revenue
+    allow_group_by: false
+  - field: amount_billed
+    data_type: float
+    label: Billed Revenue
+    allow_group_by: false
+  - field: amount_collected
+    data_type: float
+    label: Collected Revenue
+    allow_group_by: false
+  - field: amount_discount
+    data_type: float
+    label: Discount
+    allow_group_by: false
+  - field: amount_leaked
+    data_type: float
+    label: Leaked Revenue
+    description: Expected minus collected. The headline leakage figure.
+    allow_group_by: false
+  - field: unbilled_count
+    data_type: integer
+    label: Unbilled Events
+    allow_group_by: false
+  - field: misrated_count
+    data_type: integer
+    label: Mis-rated Events
+    allow_group_by: false
+  - field: unmatched_count
+    data_type: integer
+    label: Unmatched Events
+    allow_group_by: false
