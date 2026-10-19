@@ -1,0 +1,147 @@
+# =============================================================================
+# revenue_assurance -- the core controls.
+#
+# Each probe is a threshold test over a Prism lens, judged per subject (a site,
+# a customer class). Network-wide KPIs dilute a fault at one site into noise;
+# a probe looks at every subject separately, which is why both layers exist.
+#
+# Thresholds sit between the normal range of the synthetic data and the planted
+# faults. They are demo values, measured on this dataset alone.
+# =============================================================================
+name: revenue_assurance
+description: Volume completeness, rating accuracy and collection drift controls.
+
+subject_types:
+  - id: site
+    description: A physical or logical site that produces usage events.
+  - id: customer_class
+    description: RESIDENTIAL, BUSINESS or ENTERPRISE.
+
+alert_types:
+  - id: 1
+    name: Volume
+    description: Usage volume far from the site's own normal.
+  - id: 2
+    name: Rating
+    description: Events billed at the wrong rate.
+  - id: 3
+    name: Collection
+    description: Revenue not collected the way it normally is.
+
+rules:
+  - id: R-VOLUME
+    name: Usage volume is complete and not duplicated
+    process: Ingestion
+    owner: Data operations
+    probes:
+      - id: PR-FEED-COMPLETENESS
+        name: Feed completeness
+        description: A site reported far fewer events than its own trailing normal -- a lost or partial feed.
+        lens: site_volume_baseline
+        query:
+          fields:
+            - { field: usage_date }
+            - { field: site_id }
+            - { field: site_name }
+            - { field: event_count }
+            - { field: baseline_event_count }
+            - { field: volume_change_ratio }
+          filters:
+            # No verdict without a real baseline: a "normal" built from one or
+            # two days is not a normal.
+            - { field: baseline_days, op: gte, value: 7 }
+          limit: 10000
+        value_field: volume_change_ratio
+        subject_field: site_id
+        subject_type: site
+        comparator: lt
+        threshold: -0.6
+        severity: high
+        alert_type: 1
+        evidence_fields: [site_name, event_count, baseline_event_count]
+        # Half the sites down on the same day is a holiday or an upstream
+        # outage, not a set of site faults.
+        suppress_when_share: 0.5
+
+      - id: PR-VOLUME-SPIKE
+        name: Volume spike
+        description: A site reported far more events than its own trailing normal -- usually duplicate ingestion.
+        lens: site_volume_baseline
+        query:
+          fields:
+            - { field: usage_date }
+            - { field: site_id }
+            - { field: site_name }
+            - { field: event_count }
+            - { field: baseline_event_count }
+            - { field: volume_change_ratio }
+          filters:
+            - { field: baseline_days, op: gte, value: 7 }
+          limit: 10000
+        value_field: volume_change_ratio
+        subject_field: site_id
+        subject_type: site
+        comparator: gt
+        threshold: 0.6
+        severity: medium
+        alert_type: 1
+        evidence_fields: [site_name, event_count, baseline_event_count]
+        suppress_when_share: 0.5
+
+  - id: R-RATING
+    name: Events are billed at the right rate
+    process: Rating and billing
+    owner: Billing operations
+    probes:
+      - id: PR-RATING-ACCURACY
+        name: Rating accuracy
+        description: The share of mis-rated events for a customer class rose well above its trailing rate.
+        lens: rating_quality
+        query:
+          fields:
+            - { field: usage_date }
+            - { field: customer_class }
+            - { field: event_count }
+            - { field: misrated_rate }
+            - { field: baseline_misrated_rate }
+          filters:
+            - { field: baseline_misrated_rate, op: is_not_null }
+          limit: 10000
+        value_field: misrated_rate
+        baseline_field: baseline_misrated_rate
+        subject_field: customer_class
+        subject_type: customer_class
+        comparator: pp_drift_above
+        threshold: 0.15
+        severity: critical
+        alert_type: 2
+        evidence_fields: [event_count]
+
+  - id: R-COLLECTION
+    name: Revenue is collected as usual
+    process: Collections
+    owner: Credit control
+    probes:
+      - id: PR-COLLECTION-DRIFT
+        name: Write-off drift
+        description: A site wrote off a much larger share of revenue than its trailing normal.
+        lens: collection_mix
+        query:
+          fields:
+            - { field: usage_date }
+            - { field: site_id }
+            - { field: site_name }
+            - { field: written_off_share }
+            - { field: baseline_written_off_share }
+          filters:
+            - { field: baseline_written_off_share, op: is_not_null }
+          limit: 10000
+        value_field: written_off_share
+        baseline_field: baseline_written_off_share
+        subject_field: site_id
+        subject_type: site
+        comparator: pp_drift_above
+        threshold: 0.10
+        severity: high
+        alert_type: 3
+        evidence_fields: [site_name]

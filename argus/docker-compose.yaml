@@ -116,8 +116,19 @@ services:
       prism: { condition: service_healthy }
       postgres: { condition: service_healthy }
 
+  sentry:
+    <<: *service
+    build:
+      context: .
+      dockerfile: services/sentry/Dockerfile
+    ports:
+      - "127.0.0.1:8002:8000"
+    depends_on:
+      prism: { condition: service_healthy }
+      postgres: { condition: service_healthy }
+
   # --- one-off tasks ------------------------------------------------------------
-  # docker compose run --rm tools bootstrap | migrate | seed | compute | status
+  # docker compose run --rm tools bootstrap | migrate | seed | compute | accept | status
 
   tools:
     <<: *env

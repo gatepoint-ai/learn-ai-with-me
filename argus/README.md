@@ -7,10 +7,11 @@ in both live data and a policy knowledge base.
 Everything is config-driven: adding a metric, a check, a data view or a dashboard page means adding
 a YAML file, not writing code.
 
-> **Status — October 2026: the data layer runs end to end.** The Docker stack (ClickHouse,
-> Postgres, pgvector, Valkey), Prism (the query layer) and Pulse (the KPI engine) run on synthetic
-> data with planted faults, covered by 129 unit tests. Sentry, Codex, the Analyst and the
-> dashboard are the roadmap below. This README says which parts run today and which are still the plan.
+> **Status — October 2026: detection runs end to end.** The Docker stack (ClickHouse, Postgres,
+> pgvector, Valkey), Prism (query layer), Pulse (KPIs) and Sentry (rules) run on synthetic data
+> with planted faults. The acceptance gate passes: every planted fault caught, the negative control
+> suppressed, zero unexplained alerts. 150 unit tests. Codex, the Analyst and the dashboard are the
+> roadmap below. This README says which parts run today and which are still the plan.
 
 I'm [Maicon Abreu](https://www.linkedin.com/in/mbdabreu/) — 20 years in revenue assurance and fraud,
 now delivering data and AI programs. Argus is the system I wish I'd had: the controls I've worked
@@ -22,11 +23,24 @@ see the [lesson index](../README.md).
 
 ```bash
 cd argus
-docker compose up -d --build                 # datastores + Prism + Pulse
-docker compose run --rm tools bootstrap      # migrate, seed 30 days with 4 planted faults, compute KPIs
+docker compose up -d --build                 # datastores + Prism + Pulse + Sentry
+docker compose run --rm tools bootstrap      # migrate, seed, compute KPIs, run rules, acceptance gate
 
 curl localhost:8001/pulse/v1/kpis            # KPI values and status
-curl localhost:8001/pulse/v1/anomalies       # what the KPI engine flagged, in plain sentences
+curl localhost:8002/sentry/v1/alerts         # open alerts, each explained in one sentence
+```
+
+The bootstrap ends with the acceptance gate:
+
+```text
+  PASS  feed_outage       2026-10-01  expect alert      PR-FEED-COMPLETENESS on SITE-03: open
+  PASS  volume_spike      2026-10-08  expect alert      PR-VOLUME-SPIKE on SITE-06: open
+  PASS  misrating         2026-10-11  expect alert      PR-RATING-ACCURACY on ENTERPRISE: open
+  ...
+  PASS  systemic_dip      2026-10-04  expect suppressed PR-FEED-COMPLETENESS: 8 breaches, 8 suppressed, 0 open
+  No unexplained open alerts.
+  10/10 checks passed (pass rate 1.00), 0 unexplained alerts
+  GATE: PASS
 ```
 
 Ask Prism directly — the query is a description, never SQL:
@@ -43,7 +57,7 @@ cd argus
 python -m venv .venv && . .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -e "libs/argus-core[test]" -r services/prism/requirements.txt -r services/pulse/requirements.txt
 
-python -m pytest tests                               # 129 unit tests, no network needed
+python -m pytest tests                               # 150 unit tests, no network needed
 python datamodel/seed/generate.py --days 30 --dry-run   # synthetic data + planted faults, no database
 ```
 
@@ -64,8 +78,8 @@ for what it does.
 |---|---|---|---|
 | **prism** | 8000 | Query layer. Serves **lenses** — named, validated SQL views with a closed field list. | ✅ built, tested |
 | **pulse** | 8001 | KPI engine. Computes series, breakdowns, forecasts and anomalies. | ✅ built, tested |
-| **sentry** | 8002 | Rule engine. Runs **probes** against lenses and raises **alerts**. | 🔜 next |
-| **codex** | 8004 | Knowledge base. Chunks, embeds and retrieves policy documents. | 🔜 planned (schema ✅) |
+| **sentry** | 8002 | Rule engine. Runs **probes** against lenses and raises **alerts**. | ✅ built, tested |
+| **codex** | 8004 | Knowledge base. Chunks, embeds and retrieves policy documents. | 🔜 next (schema ✅) |
 | **analyst** | 8003 | AI agent. Answers questions using lens queries *and* Codex retrieval. | 🔜 planned |
 | **deck** | 3000 | Dashboard. Renders YAML-defined views and panels. | 🔜 planned |
 
@@ -102,13 +116,16 @@ numbers.
 | `libs/argus-core/` | Shared core: settings, datastore clients, config schemas, and the SQL compiler with the field whitelist |
 | `services/prism/` | The query layer — FastAPI service, Dockerfile |
 | `services/pulse/` | The KPI engine — pure, tested arithmetic in `engine.py`; reads only through Prism |
+| `services/sentry/` | The rule engine — per-subject probes, systemic suppression, self-closing alerts |
+| `config/rules/` | The controls: feed completeness, volume spike, rating accuracy, write-off drift |
+| `datamodel/acceptance.py` | The gate: every planted fault caught, the negative control suppressed |
 | `config/kpis/` | Five KPI definitions: leakage, volume, collected revenue, mis-rating, unbilled |
 | `docker-compose.yaml` | The local stack; `tools` runs migrations, seeding and computation |
 | `config/lenses/` | Six lens definitions (usage trends, rating quality, collection mix, alerts, …) |
 | `datamodel/migrations/` | Schemas for ClickHouse (analytics), Postgres (pulse, sentry, analyst) and pgvector (codex) |
 | `datamodel/migrate.py` | Migration runner for all three engines |
 | `datamodel/seed/` | Synthetic-data generator and the fault manifest |
-| `tests/unit/` | 129 tests: SQL builder and injection payloads, migration splitter, seeder, Prism API, KPI engine |
+| `tests/unit/` | 150 tests: SQL builder and injection payloads, migration splitter, seeder, Prism API, KPI and rule engines |
 
 ## Concepts
 
@@ -136,8 +153,8 @@ covered.
 
 ## Synthetic data has faults on purpose
 
-The seeder plants four documented faults and writes `datamodel/seed/fault-manifest.json` describing
-them:
+The seeder plants four documented faults **and one negative control**, and writes a manifest
+describing them:
 
 | Fault | Shape | Probe expected to catch it |
 |---|---|---|
@@ -145,10 +162,16 @@ them:
 | `volume_spike` | one site doubles for a day | `PR-VOLUME-SPIKE` |
 | `misrating` | one customer class mis-rated for 3 days | `PR-RATING-ACCURACY` |
 | `collection_shift` | one site's write-off share jumps for 4 days | `PR-COLLECTION-DRIFT` |
+| `systemic_dip` | **every** site loses ~70% on one day, like a public holiday | must be **suppressed**, not alerted |
 
-The manifest is the contract between the seeder and Sentry: the acceptance test will read it and
-assert an alert exists for every entry. A seeder that produced clean data would prove only that the
-stack starts — "no alerts" and "detector broken" would look identical.
+The manifest is the contract between the seeder and Sentry: the acceptance gate
+([`datamodel/acceptance.py`](datamodel/acceptance.py)) reads it and checks every fault on every
+day. A seeder that produced clean data would prove only that the stack starts — "no alerts" and
+"detector broken" would look identical. The negative control proves the opposite failure is caught
+too: alerting on everything is not a pass.
+
+The gate fails closed. Zero cases is a failure, not a vacuous pass; every fault date is checked,
+not a sample; and an open alert the manifest cannot explain fails the run.
 
 ## LLM providers (planned for the Analyst)
 
@@ -167,7 +190,7 @@ Embeddings are deliberately **independent** of the chat provider: retrieval runs
 
 1. ✅ **Pulse** — KPI series and anomalies, reading through Prism.
 2. ✅ **Docker stack** — `docker compose` with a `tools` container for migrate / seed / compute.
-3. **Sentry** — probes and alerts; the acceptance test that checks every planted fault is caught.
+3. ✅ **Sentry** — probes and alerts; the acceptance gate that checks every planted fault is caught.
 4. **Codex** — document chunking, local embeddings, retrieval.
 5. **Analyst** — the AI agent, with data tools and knowledge tools kept apart.
 6. **Deck** — the dashboard.

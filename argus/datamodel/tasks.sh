@@ -7,8 +7,10 @@ case "${1:-bootstrap}" in
   status)    python datamodel/migrate.py status ;;
   seed)      python datamodel/seed/generate.py --days "${SEED_DAYS:-30}" ;;
   compute)   python datamodel/compute.py ;;
+  accept)    python datamodel/acceptance.py ;;
   bootstrap) python datamodel/migrate.py up
              python datamodel/seed/generate.py --days "${SEED_DAYS:-30}"
-             python datamodel/compute.py ;;
+             python datamodel/compute.py
+             python datamodel/acceptance.py ;;
   *)         exec "$@" ;;
 esac

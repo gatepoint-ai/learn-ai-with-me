@@ -167,6 +167,7 @@ def validate_lens_references(
                 (probe.value_field, "value_field"),
                 (probe.baseline_field, "baseline_field"),
                 (probe.subject_field, "subject_field"),
+                (probe.period_field, "period_field"),
             ] + [(f, "evidence_field") for f in probe.evidence_fields]
             for name, label in candidates:
                 if name is not None and name not in known:
