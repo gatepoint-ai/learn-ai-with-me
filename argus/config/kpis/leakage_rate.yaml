@@ -1,0 +1,28 @@
+# The headline KPI: the share of expected revenue that was never collected.
+# A ratio, so Pulse stores numerator and denominator alongside the value --
+# a weekly or monthly figure is re-derived from the sums, never by averaging
+# daily percentages.
+id: leakage_rate
+name: Revenue leakage rate
+description: Share of expected revenue that was not collected (expected minus collected, over expected).
+lens: usage_trends
+date_field: usage_date
+measure:
+  function: sum
+  field: amount_leaked
+  denominator_function: sum
+  denominator_field: amount_expected
+  scale: 100
+unit: percent
+direction: lower_is_better
+breakdowns: [site_id, customer_class, channel]
+# Thresholds sit just above the normal range of the synthetic data (see the
+# seeder). They are demo values, set from this dataset alone.
+thresholds:
+  warning: 19
+  critical: 22
+anomaly:
+  window: 21
+  z_threshold: 3.0
+  min_history: 10
+tags: [leakage, headline]

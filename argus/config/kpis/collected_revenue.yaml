@@ -1,0 +1,16 @@
+id: collected_revenue
+name: Collected revenue
+description: Revenue actually collected per day.
+lens: usage_trends
+date_field: usage_date
+measure:
+  function: sum
+  field: amount_collected
+unit: currency
+direction: higher_is_better
+breakdowns: [site_id, customer_class]
+anomaly:
+  window: 21
+  z_threshold: 3.0
+  min_history: 10
+tags: [revenue]

@@ -1,0 +1,26 @@
+# Share of events billed at the wrong rate. Small and stable in normal
+# operation, so a rating-engine regression stands out sharply.
+id: misrating_rate
+name: Mis-rating rate
+description: Share of usage events billed at the wrong rate.
+lens: usage_trends
+date_field: usage_date
+measure:
+  function: sum
+  field: misrated_count
+  denominator_function: sum
+  denominator_field: event_count
+  scale: 100
+unit: percent
+direction: lower_is_better
+breakdowns: [customer_class, site_id]
+# Thresholds sit just above the normal range of the synthetic data (see the
+# seeder). They are demo values, set from this dataset alone.
+thresholds:
+  warning: 4
+  critical: 6
+anomaly:
+  window: 21
+  z_threshold: 3.0
+  min_history: 10
+tags: [rating, quality]
