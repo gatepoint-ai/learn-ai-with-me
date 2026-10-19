@@ -30,9 +30,6 @@ class ClickHouseClient:
                 password=s.clickhouse_password,
                 database=s.clickhouse_database,
                 secure=s.clickhouse_secure,
-                # Keep decimals exact rather than letting them become floats on
-                # the way out; revenue figures are summed downstream.
-                query_formats={"Decimal": "string"},
             )
         return self._client
 
@@ -40,7 +37,13 @@ class ClickHouseClient:
         self, sql: str, parameters: dict[str, Any] | None = None
     ) -> tuple[list[str], list[list[Any]]]:
         """Execute and return (column_names, rows)."""
-        result = self.connect().query(sql, parameters=parameters or {})
+        result = self.connect().query(
+            sql,
+            parameters=parameters or {},
+            # Keep decimals exact rather than letting them become floats on the
+            # way out; revenue figures are summed downstream.
+            query_formats={"Decimal": "string"},
+        )
         return list(result.column_names), [list(row) for row in result.result_rows]
 
     def query_dicts(

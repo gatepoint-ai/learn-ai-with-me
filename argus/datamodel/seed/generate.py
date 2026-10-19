@@ -44,7 +44,11 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-MANIFEST_PATH = REPO_ROOT / "datamodel" / "seed" / "fault-manifest.json"
+# Overridable so a container can write the manifest to a shared volume, where
+# the acceptance test reads it. The committed copy is the reference example.
+MANIFEST_PATH = Path(
+    os.getenv("ARGUS_MANIFEST", REPO_ROOT / "datamodel" / "seed" / "fault-manifest.json")
+)
 
 # --------------------------------------------------------------------------
 # Reference data
@@ -454,7 +458,12 @@ def main(argv: list[str] | None = None) -> int:
     }
     MANIFEST_PATH.parent.mkdir(parents=True, exist_ok=True)
     MANIFEST_PATH.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
-    print(f"  manifest -> {MANIFEST_PATH.relative_to(REPO_ROOT)}")
+    shown = (
+        MANIFEST_PATH.relative_to(REPO_ROOT)
+        if MANIFEST_PATH.is_relative_to(REPO_ROOT)
+        else MANIFEST_PATH
+    )
+    print(f"  manifest -> {shown}")
 
     if args.dry_run:
         print("  dry run: ClickHouse untouched")

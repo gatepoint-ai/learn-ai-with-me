@@ -123,9 +123,9 @@ def _check_probe_ids_unique(
 def validate_lens_references(
     lenses: dict[str, LensSpec],
     kpis: dict[str, KpiSpec] | None = None,
-    controls: dict[str, RuleSet] | None = None,
+    rules: dict[str, RuleSet] | None = None,
 ) -> None:
-    """Cross-check that KPIs and controls reference lenses and fields that exist.
+    """Cross-check that KPIs and rules reference lenses and fields that exist.
 
     Without this a KPI naming a dropped column fails at recalculation time, hours
     after the deploy that broke it.
@@ -154,37 +154,35 @@ def validate_lens_references(
                     f"kpi {kpi_id}: {label} {name!r} not in lens {kpi.lens!r}"
                 )
 
-    for ruleset_name, ruleset in (controls or {}).items():
-        subject_types = {e.id for e in ruleset.subject_types}
-        inconsistencies = {i.id for i in ruleset.alert_types}
-        for point in ruleset.all_probes:
-            lens = lenses.get(point.lens)
+    for ruleset_name, ruleset in (rules or {}).items():
+        subject_types = {s.id for s in ruleset.subject_types}
+        alert_types = {a.id for a in ruleset.alert_types}
+        for probe in ruleset.all_probes:
+            lens = lenses.get(probe.lens)
             if lens is None:
-                problems.append(
-                    f"probe {probe.id}: unknown lens {point.lens!r}"
-                )
+                problems.append(f"probe {probe.id}: unknown lens {probe.lens!r}")
                 continue
             known = lens.field_map
             candidates = [
-                (point.value_field, "value_field"),
-                (point.baseline_field, "baseline_field"),
-                (point.subject_field, "subject_field"),
-            ] + [(f, "evidence_field") for f in point.evidence_fields]
+                (probe.value_field, "value_field"),
+                (probe.baseline_field, "baseline_field"),
+                (probe.subject_field, "subject_field"),
+            ] + [(f, "evidence_field") for f in probe.evidence_fields]
             for name, label in candidates:
                 if name is not None and name not in known:
                     problems.append(
                         f"probe {probe.id}: {label} {name!r} "
-                        f"not in lens {point.lens!r}"
+                        f"not in lens {probe.lens!r}"
                     )
-            if point.subject_type not in subject_types:
+            if probe.subject_type not in subject_types:
                 problems.append(
                     f"probe {probe.id}: subject_type "
-                    f"{point.subject_type!r} not declared in {ruleset_name!r}"
+                    f"{probe.subject_type!r} not declared in {ruleset_name!r}"
                 )
-            if point.alert_type not in inconsistencies:
+            if probe.alert_type not in alert_types:
                 problems.append(
                     f"probe {probe.id}: alert_type "
-                    f"{point.alert_type} not declared in {ruleset_name!r}"
+                    f"{probe.alert_type} not declared in {ruleset_name!r}"
                 )
 
     if problems:

@@ -22,30 +22,35 @@ tags:
 
 # Pre-aggregated to the day. The leakage column is derived here so that every
 # consumer computes it the same way -- expected minus collected, once.
+#
+# Source columns are qualified with `a.` on purpose. ClickHouse resolves a bare
+# name to a SELECT alias before a table column, so `sum(amount_expected)` inside
+# the leakage expression would otherwise read the alias -- itself a sum -- and
+# fail as a nested aggregate.
 sql: >
   SELECT
-    usage_date,
-    site_id,
-    site_name,
-    partner_id,
-    partner_name,
-    home_away,
-    channel,
-    customer_class,
-    collection_status,
-    sum(event_count)                                    AS event_count,
-    toFloat64(sum(amount_expected))                     AS amount_expected,
-    toFloat64(sum(amount_billed))                       AS amount_billed,
-    toFloat64(sum(amount_collected))                    AS amount_collected,
-    toFloat64(sum(amount_discount))                     AS amount_discount,
-    toFloat64(sum(amount_expected) - sum(amount_collected)) AS amount_leaked,
-    sum(unbilled_count)                                 AS unbilled_count,
-    sum(misrated_count)                                 AS misrated_count,
-    sum(unmatched_count)                                AS unmatched_count
-  FROM analytics.usage_daily_agg
+    a.usage_date                                            AS usage_date,
+    a.site_id                                               AS site_id,
+    a.site_name                                             AS site_name,
+    a.partner_id                                            AS partner_id,
+    a.partner_name                                          AS partner_name,
+    a.home_away                                             AS home_away,
+    a.channel                                               AS channel,
+    a.customer_class                                        AS customer_class,
+    a.collection_status                                     AS collection_status,
+    sum(a.event_count)                                      AS event_count,
+    toFloat64(sum(a.amount_expected))                       AS amount_expected,
+    toFloat64(sum(a.amount_billed))                         AS amount_billed,
+    toFloat64(sum(a.amount_collected))                      AS amount_collected,
+    toFloat64(sum(a.amount_discount))                       AS amount_discount,
+    toFloat64(sum(a.amount_expected) - sum(a.amount_collected)) AS amount_leaked,
+    sum(a.unbilled_count)                                   AS unbilled_count,
+    sum(a.misrated_count)                                   AS misrated_count,
+    sum(a.unmatched_count)                                  AS unmatched_count
+  FROM analytics.usage_daily_agg AS a
   GROUP BY
-    usage_date, site_id, site_name, partner_id, partner_name,
-    home_away, channel, customer_class, collection_status
+    a.usage_date, a.site_id, a.site_name, a.partner_id, a.partner_name,
+    a.home_away, a.channel, a.customer_class, a.collection_status
 
 fields:
   - field: usage_date

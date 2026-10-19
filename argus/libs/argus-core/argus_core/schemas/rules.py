@@ -116,9 +116,9 @@ class RuleSet(BaseModel):
     def all_probes(self) -> list[Probe]:
         """Active probes from active rules, in file order."""
         return [
-            point
+            probe
             for rule in self.rules
             if rule.active
             for probe in rule.probes
-            if point.active
+            if probe.active
         ]

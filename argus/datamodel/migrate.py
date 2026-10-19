@@ -256,6 +256,26 @@ class ClickHouseTarget:
         self.client.close()
 
 
+def _ensure_database(psycopg, server: str, database: str) -> None:
+    """Create the database if it does not exist yet.
+
+    One Postgres server holds several service databases. Creating them here,
+    rather than in a container init script, means a fresh server, an existing
+    one and a managed cloud instance all bootstrap the same way.
+    """
+    with psycopg.connect(f"{server}/postgres", autocommit=True) as admin:
+        exists = admin.execute(
+            "SELECT 1 FROM pg_database WHERE datname = %s", (database,)
+        ).fetchone()
+        if not exists:
+            # Identifier, not a value: it comes from the TARGETS table in this
+            # file, never from input, and is validated by the pattern below.
+            if not re.fullmatch(r"[a-z_][a-z0-9_]*", database):
+                raise ValueError(f"refusing to create database {database!r}")
+            admin.execute(f'CREATE DATABASE "{database}"')
+            print(f"    created database {database}")
+
+
 class PostgresTarget:
     engine = "postgres"
 
@@ -265,13 +285,15 @@ class PostgresTarget:
         self.schema = schema
         # The vector store is a separate instance with its own env prefix.
         prefix = host_env
-        dsn = (
-            f"postgresql://{os.getenv(f'{prefix}_USER', 'ra')}:"
+        default_host = "codex-db" if prefix == "CODEX" else "postgres"
+        server = (
+            f"postgresql://{os.getenv(f'{prefix}_USER', 'argus')}:"
             f"{os.getenv(f'{prefix}_PASSWORD', 'dev_password')}@"
-            f"{os.getenv(f'{prefix}_HOST', 'postgres')}:"
-            f"{os.getenv(f'{prefix}_PORT', '5432')}/{schema}"
+            f"{os.getenv(f'{prefix}_HOST', default_host)}:"
+            f"{os.getenv(f'{prefix}_PORT', '5432')}"
         )
-        self.conn = psycopg.connect(dsn, autocommit=False)
+        _ensure_database(psycopg, server, schema)
+        self.conn = psycopg.connect(f"{server}/{schema}", autocommit=False)
 
     def ensure_bookkeeping(self) -> None:
         with self.conn.cursor() as cur:
