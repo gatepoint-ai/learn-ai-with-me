@@ -6,7 +6,8 @@ Why faults matter
 A seeder that produces clean data proves only that the stack starts. The
 sentry and the KPI anomaly detector would report nothing, and "nothing" is
 indistinguishable from "broken". So this generator plants four specific,
-documented faults and writes a manifest describing them.
+documented faults -- plus one negative control -- and writes a manifest
+describing them.
 
 The manifest is the contract between this file and the acceptance test: the test
 reads it and asserts the sentry produced an alert for every entry. That
@@ -19,6 +20,16 @@ Faults planted
 2. ``volume_spike``     one site doubles its volume for one day
 3. ``misrating``        one customer class is mis-rated for three days
 4. ``collection_shift`` one site's write-off share jumps for four days
+
+Negative control
+----------------
+5. ``systemic_dip``     EVERY site loses ~70% of its volume on one day, the way
+                        a public holiday or a regional outage looks. Each site
+                        breaches the volume probe, and the right answer is to
+                        raise nothing: when everything moves at once it is the
+                        environment, not a fault. The manifest marks it
+                        ``expect: suppressed``, so the acceptance test fails if
+                        the rule engine opens alerts for it.
 
 Determinism
 -----------
@@ -106,6 +117,9 @@ class Fault:
     kind: str
     description: str
     expect_probe: str
+    #: "alert" -- the probe must open an alert. "suppressed" -- it must not:
+    #: a negative control that proves the engine can tell noise from a fault.
+    expect: str = "alert"
     site_id: str | None = None
     customer_class: str | None = None
     dates: list[str] = field(default_factory=list)
@@ -131,6 +145,7 @@ def plan_faults(days: list[date], rng: random.Random) -> list[Fault]:
     candidates = days[warmup:-1]
 
     outage_day = candidates[len(candidates) // 5]
+    dip_day = candidates[int(len(candidates) * 0.35)]
     spike_day = candidates[len(candidates) // 2]
     misrating_start = candidates[int(len(candidates) * 0.68)]
     shift_start = candidates[int(len(candidates) * 0.82)]
@@ -191,6 +206,19 @@ def plan_faults(days: list[date], rng: random.Random) -> list[Fault]:
             dates=[d.isoformat() for d in shift_days],
             magnitude="write-off share 3% -> ~26%",
         ),
+        Fault(
+            id="systemic_dip",
+            kind="systemic_dip",
+            description=(
+                "Negative control: every site lost most of its volume on the "
+                "same day, as on a public holiday. Not a fault -- the rule "
+                "engine must suppress it rather than raise eight alerts."
+            ),
+            expect_probe="PR-FEED-COMPLETENESS",
+            expect="suppressed",
+            dates=[dip_day.isoformat()],
+            magnitude="-70% volume at every site",
+        ),
     ]
 
 
@@ -226,11 +254,13 @@ def generate_events(
     spike = by_id["volume_spike"]
     misrating = by_id["misrating"]
     shift = by_id["collection_shift"]
+    dip = by_id["systemic_dip"]
 
     outage_dates = set(outage.dates)
     spike_dates = set(spike.dates)
     misrating_dates = set(misrating.dates)
     shift_dates = set(shift.dates)
+    dip_dates = set(dip.dates)
 
     product_price = {pid: price for pid, _, price in PRODUCTS}
     partner_home = {pid: home for pid, _, home in PARTNERS}
@@ -248,6 +278,8 @@ def generate_events(
                 volume *= 0.15
             if site_id == spike.site_id and iso in spike_dates:
                 volume *= 2.10
+            if iso in dip_dates:
+                volume *= 0.30
 
             count = max(1, int(round(volume)))
 
@@ -335,6 +367,8 @@ def generate_events(
                 touched["feed_outage"] += count
             if site_id == spike.site_id and iso in spike_dates:
                 touched["volume_spike"] += count
+            if iso in dip_dates:
+                touched["systemic_dip"] += count
 
     return rows, touched
 

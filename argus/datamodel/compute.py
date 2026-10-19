@@ -16,6 +16,7 @@ import httpx
 
 STEPS = [
     ("pulse", os.getenv("PULSE_URL", "http://pulse:8000"), "/pulse/v1/recalculate"),
+    ("sentry", os.getenv("SENTRY_URL", "http://sentry:8000"), "/sentry/v1/run"),
 ]
 
 
@@ -41,10 +42,18 @@ def main() -> int:
             body = client.post(f"{base}{path}").json()
             failed = body.get("failed", 0)
             failures += failed
-            print(f"  {'x' if failed else '+'} {name}: {body.get('kpis', '?')} computed, {failed} failed")
+            total = body.get("kpis", body.get("probes", "?"))
+            print(f"  {'x' if failed else '+'} {name}: {total} evaluated, {failed} failed")
             for r in body.get("results", []):
-                extra = r.get("error") or f"{r.get('periods')} periods, {r.get('anomalies')} anomalies"
-                print(f"      {r['kpi']:20s} {r['status']:9s} {extra}")
+                label = r.get("kpi") or r.get("probe")
+                if r.get("error"):
+                    extra = r["error"]
+                elif "periods" in r:
+                    extra = f"{r['periods']} periods, {r['anomalies']} anomalies"
+                else:
+                    extra = (f"{r['rows']} rows -> {r['open']} open, "
+                             f"{r['suppressed']} suppressed, {r['closed']} closed")
+                print(f"      {label:22s} {r['status']:9s} {extra}")
     return 1 if failures else 0
 
 

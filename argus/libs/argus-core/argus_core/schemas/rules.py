@@ -74,11 +74,19 @@ class Probe(BaseModel):
     baseline_field: str | None = Field(default=None, pattern=IDENTIFIER_PATTERN)
     subject_field: str = Field(pattern=IDENTIFIER_PATTERN)
     subject_type: str = Field(pattern=IDENTIFIER_PATTERN)
+    #: The lens field holding the day an alert is about.
+    period_field: str = Field(default="usage_date", pattern=IDENTIFIER_PATTERN)
     comparator: Comparator
     threshold: float
     severity: Severity = Severity.MEDIUM
     alert_type: int
     evidence_fields: list[str] = Field(default_factory=list)
+    #: If at least this share of subjects breach on the same period, the
+    #: breaches are suppressed as systemic: when every site drops at once it is
+    #: a holiday or an upstream outage, not eight separate faults. None disables.
+    suppress_when_share: float | None = Field(default=None, gt=0, le=1)
+    #: Suppression needs enough subjects to mean anything.
+    suppress_min_subjects: int = Field(default=3, ge=2)
     active: bool = True
 
     def model_post_init(self, _context: object) -> None:

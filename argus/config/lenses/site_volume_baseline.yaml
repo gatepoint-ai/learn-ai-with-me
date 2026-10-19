@@ -36,6 +36,7 @@ sql: >
     amount_collected,
     baseline_event_count,
     baseline_stddev,
+    baseline_days,
     if(baseline_event_count > 0,
        (event_count - baseline_event_count) / baseline_event_count,
        0) AS volume_change_ratio,
@@ -51,7 +52,8 @@ sql: >
       amount_expected,
       amount_collected,
       avg(event_count) OVER w    AS baseline_event_count,
-      stddevPop(event_count) OVER w AS baseline_stddev
+      stddevPop(event_count) OVER w AS baseline_stddev,
+      count() OVER w             AS baseline_days
     FROM (
       SELECT
         usage_date,
@@ -100,6 +102,13 @@ fields:
   - field: baseline_stddev
     data_type: float
     label: Trailing 30d Std Dev
+    allow_group_by: false
+  - field: baseline_days
+    data_type: integer
+    label: Baseline Days
+    description: >
+      How many prior days the baseline is built from. Probes require a minimum,
+      because a "normal" computed from one or two days is not a normal.
     allow_group_by: false
   - field: volume_change_ratio
     data_type: float

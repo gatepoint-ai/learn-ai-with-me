@@ -268,3 +268,27 @@ def test_all_sites_produce_data(dataset):
     _, _, rows, _ = dataset
     seen = {row[COL["site_id"]] for row in rows}
     assert seen == {s[0] for s in SITES}
+
+
+def test_the_negative_control_hits_every_site_on_one_day(dataset):
+    """The systemic dip must look like a fault at every site at once.
+
+    If it only touched some sites it would be a real multi-site fault, and
+    suppressing it would be wrong.
+    """
+    _, faults, rows, _ = dataset
+    dip = faults["systemic_dip"]
+    assert dip.expect == "suppressed"
+    assert len(dip.dates) == 1
+    day = date.fromisoformat(dip.dates[0])
+    counts = _daily_counts_by_site(rows)
+    for site, by_day in counts.items():
+        normal = [n for d, n in by_day.items() if d != day and d.weekday() == day.weekday()]
+        assert by_day[day] < 0.5 * (sum(normal) / len(normal)), site
+
+
+def test_only_the_negative_control_expects_suppression(dataset):
+    _, faults, _, _ = dataset
+    expected = {f.id: f.expect for f in faults.values()}
+    assert expected.pop("systemic_dip") == "suppressed"
+    assert set(expected.values()) == {"alert"}
