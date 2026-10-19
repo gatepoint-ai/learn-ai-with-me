@@ -1,0 +1,114 @@
+# =============================================================================
+# site_volume_baseline -- daily site volume next to its own trailing baseline.
+#
+# This lens exists because a threshold test needs something to compare against.
+# The two volume probes (feed completeness, volume spike) both ask "is today far
+# from normal for THIS site", so the trailing mean has to be computed per site,
+# not globally -- a quiet site and a busy site have different normals.
+#
+# The window deliberately EXCLUDES the current row (1 PRECEDING, not CURRENT
+# ROW). Including today would let a large anomaly drag its own baseline toward
+# itself and mask the very breach the probe is looking for.
+# =============================================================================
+name: site_volume_baseline
+label: Site Volume vs Baseline
+description: >
+  Daily event volume and revenue per site, each row carrying the trailing
+  30-day mean and standard deviation for that site. Feeds the volume probes and
+  any "is this normal" question.
+datasource: analytics
+dialect: clickhouse
+allow_cache: true
+cache_life: 900
+
+tags:
+  - baseline
+  - anomaly
+  - volume
+
+sql: >
+  SELECT
+    usage_date,
+    site_id,
+    site_name,
+    event_count,
+    amount_expected,
+    amount_collected,
+    baseline_event_count,
+    baseline_stddev,
+    if(baseline_event_count > 0,
+       (event_count - baseline_event_count) / baseline_event_count,
+       0) AS volume_change_ratio,
+    if(baseline_stddev > 0,
+       (event_count - baseline_event_count) / baseline_stddev,
+       0) AS volume_z_score
+  FROM (
+    SELECT
+      usage_date,
+      site_id,
+      site_name,
+      event_count,
+      amount_expected,
+      amount_collected,
+      avg(event_count) OVER w    AS baseline_event_count,
+      stddevPop(event_count) OVER w AS baseline_stddev
+    FROM (
+      SELECT
+        usage_date,
+        site_id,
+        any(site_name)                          AS site_name,
+        toFloat64(sum(event_count))             AS event_count,
+        toFloat64(sum(amount_expected))         AS amount_expected,
+        toFloat64(sum(amount_collected))        AS amount_collected
+      FROM analytics.usage_daily_agg
+      GROUP BY usage_date, site_id
+    )
+    WINDOW w AS (
+      PARTITION BY site_id
+      ORDER BY usage_date
+      ROWS BETWEEN 30 PRECEDING AND 1 PRECEDING
+    )
+  )
+
+fields:
+  - field: usage_date
+    data_type: date
+    label: Date
+  - field: site_id
+    data_type: string
+    label: Site ID
+  - field: site_name
+    data_type: string
+    label: Site
+  - field: event_count
+    data_type: float
+    label: Events
+    allow_group_by: false
+  - field: amount_expected
+    data_type: float
+    label: Expected Revenue
+    allow_group_by: false
+  - field: amount_collected
+    data_type: float
+    label: Collected Revenue
+    allow_group_by: false
+  - field: baseline_event_count
+    data_type: float
+    label: Trailing 30d Mean Events
+    description: Mean of the previous 30 days for this site, excluding today.
+    allow_group_by: false
+  - field: baseline_stddev
+    data_type: float
+    label: Trailing 30d Std Dev
+    allow_group_by: false
+  - field: volume_change_ratio
+    data_type: float
+    label: Volume Change vs Baseline
+    description: >
+      Signed fraction. -0.85 means today is 85% below the trailing mean;
+      +1.10 means 110% above it.
+    allow_group_by: false
+  - field: volume_z_score
+    data_type: float
+    label: Volume Z-Score
+    allow_group_by: false

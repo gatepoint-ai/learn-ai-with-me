@@ -1,0 +1,67 @@
+{
+  "generated_at": "2026-08-25T16:19:41",
+  "seed": 20260825,
+  "seed_days": 30,
+  "start_date": "2026-07-27",
+  "end_date": "2026-08-25",
+  "event_count": 51997,
+  "faults": [
+    {
+      "id": "feed_outage",
+      "kind": "feed_outage",
+      "description": "Ingestion partially failed: the site reported ~15% of its normal event volume for one day.",
+      "expect_probe": "PR-FEED-COMPLETENESS",
+      "site_id": "SITE-03",
+      "customer_class": null,
+      "dates": [
+        "2026-08-07"
+      ],
+      "magnitude": "-85% volume vs trailing mean",
+      "affected_rows": 33
+    },
+    {
+      "id": "volume_spike",
+      "kind": "volume_spike",
+      "description": "Duplicate ingestion: the site reported roughly double its normal event volume for one day.",
+      "expect_probe": "PR-VOLUME-SPIKE",
+      "site_id": "SITE-06",
+      "customer_class": null,
+      "dates": [
+        "2026-08-14"
+      ],
+      "magnitude": "+110% volume vs trailing mean",
+      "affected_rows": 462
+    },
+    {
+      "id": "misrating",
+      "kind": "misrating",
+      "description": "Rating engine regression: ENTERPRISE events were billed at the wrong rate for three consecutive days.",
+      "expect_probe": "PR-RATING-ACCURACY",
+      "site_id": null,
+      "customer_class": "ENTERPRISE",
+      "dates": [
+        "2026-08-17",
+        "2026-08-18",
+        "2026-08-19"
+      ],
+      "magnitude": "~55% of ENTERPRISE events mis-rated (baseline ~2%)",
+      "affected_rows": 552
+    },
+    {
+      "id": "collection_shift",
+      "kind": "collection_shift",
+      "description": "Collection process breakdown: the site wrote off a far larger share of revenue than usual across four days.",
+      "expect_probe": "PR-COLLECTION-DRIFT",
+      "site_id": "SITE-05",
+      "customer_class": null,
+      "dates": [
+        "2026-08-21",
+        "2026-08-22",
+        "2026-08-23",
+        "2026-08-24"
+      ],
+      "magnitude": "write-off share 3% -> ~26%",
+      "affected_rows": 805
+    }
+  ]
+}

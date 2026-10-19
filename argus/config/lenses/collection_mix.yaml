@@ -1,0 +1,117 @@
+# =============================================================================
+# collection_mix -- write-off share per site, against its baseline.
+#
+# Write-off share is a ratio, so it is computed here rather than left to the
+# caller. A probe comparing raw write-off COUNTS would fire on any busy day; the
+# share is what actually indicates a process problem.
+# =============================================================================
+name: collection_mix
+label: Collection Mix
+description: >
+  Daily collection outcome mix per site -- collected, pending, written off,
+  disputed -- as shares, with the trailing 14-day write-off baseline. Feeds the
+  collection drift probe.
+datasource: analytics
+dialect: clickhouse
+allow_cache: true
+cache_life: 900
+
+tags:
+  - collection
+  - baseline
+  - revenue
+
+sql: >
+  SELECT
+    usage_date,
+    site_id,
+    site_name,
+    event_count,
+    collected_amount,
+    written_off_amount,
+    pending_amount,
+    disputed_amount,
+    written_off_share,
+    baseline_written_off_share,
+    written_off_share - baseline_written_off_share AS written_off_drift
+  FROM (
+    SELECT
+      usage_date,
+      site_id,
+      site_name,
+      event_count,
+      collected_amount,
+      written_off_amount,
+      pending_amount,
+      disputed_amount,
+      written_off_share,
+      avg(written_off_share) OVER (
+        PARTITION BY site_id
+        ORDER BY usage_date
+        ROWS BETWEEN 14 PRECEDING AND 1 PRECEDING
+      ) AS baseline_written_off_share
+    FROM (
+      SELECT
+        usage_date,
+        site_id,
+        any(site_name)                      AS site_name,
+        toFloat64(sum(event_count))         AS event_count,
+        toFloat64(sumIf(amount_expected, collection_status = 'COLLECTED'))   AS collected_amount,
+        toFloat64(sumIf(amount_expected, collection_status = 'WRITTEN_OFF')) AS written_off_amount,
+        toFloat64(sumIf(amount_expected, collection_status = 'PENDING'))     AS pending_amount,
+        toFloat64(sumIf(amount_expected, collection_status = 'DISPUTED'))    AS disputed_amount,
+        if(sum(amount_expected) > 0,
+           toFloat64(sumIf(amount_expected, collection_status = 'WRITTEN_OFF'))
+             / toFloat64(sum(amount_expected)),
+           0) AS written_off_share
+      FROM analytics.usage_daily_agg
+      GROUP BY usage_date, site_id
+    )
+  )
+
+fields:
+  - field: usage_date
+    data_type: date
+    label: Date
+  - field: site_id
+    data_type: string
+    label: Site ID
+  - field: site_name
+    data_type: string
+    label: Site
+  - field: event_count
+    data_type: float
+    label: Events
+    allow_group_by: false
+  - field: collected_amount
+    data_type: float
+    label: Collected
+    allow_group_by: false
+  - field: written_off_amount
+    data_type: float
+    label: Written Off
+    allow_group_by: false
+  - field: pending_amount
+    data_type: float
+    label: Pending
+    allow_group_by: false
+  - field: disputed_amount
+    data_type: float
+    label: Disputed
+    allow_group_by: false
+  - field: written_off_share
+    data_type: float
+    label: Write-off Share
+    description: Written-off expected revenue as a fraction of all expected revenue.
+    allow_group_by: false
+  - field: baseline_written_off_share
+    data_type: float
+    label: Trailing 14d Write-off Share
+    allow_group_by: false
+  - field: written_off_drift
+    data_type: float
+    label: Write-off Drift
+    description: >
+      Change in share against baseline. 0.23 means the write-off share is 23
+      percentage points above normal for this site.
+    allow_group_by: false
