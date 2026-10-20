@@ -176,20 +176,21 @@ def summarise(probe: Probe, subject: str, period: date, value: float, baseline: 
     """One deterministic sentence per alert -- the numbers that triggered it."""
     day = period.isoformat()
     c = probe.comparator
+    what = probe.value_label or probe.value_field.replace("_", " ")
     if c in (Comparator.GT, Comparator.GTE, Comparator.LT, Comparator.LTE):
         word = "above" if c in (Comparator.GT, Comparator.GTE) else "below"
         return (
-            f"{probe.name}: {subject} on {day} measured {_fmt(value)}, "
+            f"{probe.name}: {subject} on {day} -- {what} {_fmt(value)}, "
             f"{word} the limit of {_fmt(probe.threshold)}."
         )
     if c is Comparator.PP_DRIFT_ABOVE:
         return (
-            f"{probe.name}: {subject} on {day} was {_pct(value)} against a trailing "
-            f"{_pct(baseline)} -- up {_pp(value - baseline)} (limit {_pp(probe.threshold)})."
+            f"{probe.name}: {subject} on {day} -- {what} {_pct(value)} against a trailing "
+            f"{_pct(baseline)}, up {_pp(value - baseline)} (limit {_pp(probe.threshold)})."
         )
     change = (value - baseline) / abs(baseline)
     return (
-        f"{probe.name}: {subject} on {day} changed {change:+.0%} from its trailing "
+        f"{probe.name}: {subject} on {day} -- {what} changed {change:+.0%} from its trailing "
         f"{_fmt(baseline)} (limit {probe.threshold:.0%})."
     )
 

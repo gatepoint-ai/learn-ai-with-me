@@ -71,6 +71,10 @@ class Probe(BaseModel):
     lens: str = Field(pattern=IDENTIFIER_PATTERN)
     query: QueryRequest
     value_field: str = Field(pattern=IDENTIFIER_PATTERN)
+    #: What the value measures, in words -- used in the alert sentence. Without
+    #: it, "Rating accuracy: ENTERPRISE was 52.8%" does not say whether 52.8% is
+    #: the accuracy or the error rate, and a reader (or a model) will guess.
+    value_label: str | None = None
     baseline_field: str | None = Field(default=None, pattern=IDENTIFIER_PATTERN)
     subject_field: str = Field(pattern=IDENTIFIER_PATTERN)
     subject_type: str = Field(pattern=IDENTIFIER_PATTERN)

@@ -133,7 +133,7 @@ def test_one_site_down_is_an_open_alert_with_a_plain_summary():
     assert len(result.breaches) == 1
     alert = result.breaches[0]
     assert (alert.subject_id, alert.status) == ("SITE-03", "open")
-    assert "SITE-03 on 2026-10-04 measured -85%, below the limit of -60%" in alert.summary
+    assert "SITE-03 on 2026-10-04 -- volume change ratio -85%, below the limit of -60%" in alert.summary
     assert alert.evidence == {"event_count": 100}
 
 
@@ -170,6 +170,7 @@ def test_examined_scope_covers_clean_rows_for_auto_close():
 
 def test_drift_summary_states_value_baseline_and_limit():
     p = probe(id="PR-RATE", name="Rating accuracy", value_field="misrated_rate",
+              value_label="share of events mis-rated",
               baseline_field="baseline_misrated_rate", subject_field="customer_class",
               subject_type="customer_class", comparator="pp_drift_above", threshold=0.15,
               query={"fields": [{"field": f} for f in ("usage_date", "customer_class",
@@ -178,7 +179,9 @@ def test_drift_summary_states_value_baseline_and_limit():
     rows = [{"usage_date": "2026-10-11", "customer_class": "ENTERPRISE",
              "misrated_rate": 0.552, "baseline_misrated_rate": 0.020}]
     [alert] = engine.evaluate(p, rows).breaches
+    # The label says WHAT 55.2% is. Without it, a reader -- or a model -- guessed
+    # "accuracy fell to 55.2%", the opposite of what happened.
     assert alert.summary == (
-        "Rating accuracy: ENTERPRISE on 2026-10-11 was 55.2% against a trailing 2.0% "
-        "-- up 53.2 percentage points (limit 15.0 percentage points)."
+        "Rating accuracy: ENTERPRISE on 2026-10-11 -- share of events mis-rated 55.2% "
+        "against a trailing 2.0%, up 53.2 percentage points (limit 15.0 percentage points)."
     )
