@@ -70,4 +70,4 @@ Point it at your own folder with `python find_keys.py <folder>` (read-only; secr
 
 ---
 
-📣 LinkedIn post for this lesson: *link added after publishing* · Next: [02 · Governance is architecture](../02-governance-is-architecture/)
+📣 [LinkedIn post for this lesson](https://www.linkedin.com/posts/mbdabreu_googlecloud-generativeai-aigovernance-share-7518304897382076416-RaNS/) · Next: [02 · Governance is architecture](../02-governance-is-architecture/)
