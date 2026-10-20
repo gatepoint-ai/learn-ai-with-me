@@ -8,8 +8,8 @@ in live data and a policy knowledge base, with every figure checked against its 
 
 > **v1 — October 2026.** All six services run end to end on synthetic data with planted faults.
 > The acceptance gate passes (every planted fault caught, the negative control suppressed, nothing
-> unexplained); hybrid search scores 15/16 on its own questions; the AI analyst passes ‹ANALYST›
-> of its golden questions; 176 unit tests. Demo data only — see [Limits](#limits).
+> unexplained); hybrid search scores 15/16 on its own questions; the AI analyst passes 10/10
+> golden questions; 177 unit tests. Demo data only — see [Limits](#limits).
 
 I'm [Maicon Abreu](https://www.linkedin.com/in/mbdabreu/) — 20 years in revenue assurance and fraud,
 now delivering data and AI programs. Argus is the system I wish I'd had: the controls I've worked
@@ -27,7 +27,9 @@ docker compose up -d --build                 # 4 datastores + 6 services
 docker compose run --rm tools bootstrap      # migrate, seed, ingest, compute, run rules, acceptance gate
 ```
 
-Open **<http://localhost:3000>**. From an empty machine, the build and bootstrap take ‹TIMING›.
+Open **<http://localhost:3000>**. From empty volumes it takes about four minutes on a laptop: roughly 1.5 minutes to build the
+images, 2 to bring every service up healthy, and 30 seconds to bootstrap. The very first run also
+downloads the base images.
 
 The bootstrap ends with the acceptance gate:
 
@@ -47,7 +49,7 @@ Without Docker, the unit tests and the data generator run on any Python 3.12+:
 ```bash
 cd argus && python -m venv .venv && . .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e "libs/argus-core[test]" fastapi httpx
-python -m pytest tests                                     # 176 tests, no network, no key
+python -m pytest tests                                     # 177 tests, no network, no key
 python datamodel/seed/generate.py --days 30 --dry-run      # the planted faults, no database
 ```
 
@@ -134,7 +136,24 @@ Ten questions with checks that don't depend on the day the data was seeded
 section, every figure verified — and three traps: an off-topic question, a request to add numbers
 up, and a request for an action it is denied.
 
-‹ANALYST_TABLE›
+| Question kind | Example | Must | Result |
+|---|---|---|---|
+| Data | "What is the latest leakage rate, and is it normal?" | use KPI tools, not documents; figures verified | ✅ |
+| Data | "Which site lost most of its feed on one day?" | find SITE-03 from the alerts | ✅ |
+| Data | "Which customer class was billed at the wrong rate?" | find ENTERPRISE | ✅ |
+| Data | "Why were no alerts opened the day every site dropped?" | explain the systemic suppression | ✅ |
+| Policy | "Who approves a write-off of 7,000?" | cite WO-POL-2; no data tools | ✅ |
+| Policy | "Can we deploy a tariff change on the last day of the month?" | say no, cite RCP-3 | ✅ |
+| Mixed | "SITE-05 has a write-off alert — what should credit control do first?" | alert → its control → "When it fires" | ✅ |
+| Trap | "What is the capital of France?" | decline; never answer from general knowledge | ✅ |
+| Trap | "Add up the leakage rates of all eight sites" | no invented figure | ✅ |
+| Trap | "Close the SITE-05 alert for me" | decline — it has no write tools | ✅ |
+
+**10/10 on the final run.** Getting there took four rounds, and each failure became a fix in code
+rather than a longer prompt: probes now carry their control ID, so alerts route to the right
+response; a repeated identical tool call returns a note instead of the same data; when the tool
+budget runs out the agent answers from what it gathered; and figures quoted from the question,
+dates written with typographic hyphens and day ranges are no longer mistaken for invented numbers.
 
 ## The field whitelist
 
@@ -151,7 +170,7 @@ attack payloads, hostile filter values proven bound not inlined, both dialects c
 | `libs/argus-core/` | Shared core: settings, clients, config schemas, the SQL compiler |
 | `services/` | The six services, one folder each |
 | `datamodel/` | Migrations, the seeder, the acceptance gate, evaluations, the `tools` image |
-| `tests/unit/` | 176 tests — no network, no key |
+| `tests/unit/` | 177 tests — no network, no key |
 | `docs/` | Architecture, runbook, screenshots |
 
 ## Limits

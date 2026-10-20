@@ -87,3 +87,9 @@ def test_flat_query_arguments_become_a_prism_query():
     box._query_lens({"lens": "usage_trends", "fields": ["site_id"], "order_by": "-site_id"})
     assert sent["fields"] == [{"field": "site_id"}]
     assert sent["order_by"] == [{"field": "site_id", "direction": "desc"}]
+
+
+def test_a_day_range_is_a_date_not_a_figure():
+    """Regression: "the affected days (16–19 Oct)" was flagged as the figure 16."""
+    assert verify.figures("Pull the accounts for the affected days (16–19 Oct).") == []
+    assert verify.figures("between 3 to 5 Nov") == []

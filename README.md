@@ -22,8 +22,13 @@ The lessons are about **decisions and trade-offs** — where AI belongs, where i
 
 [`argus/`](argus/) is an AI revenue-assurance platform I'm **building in public**: usage data in,
 KPIs and leakage alerts out, and an AI analyst that explains them without ever computing a number
-itself. The lessons describe a pattern; Argus shows it running. It's being built one service at a
-time — the [status table](argus/README.md#architecture) says what works today.
+itself. The lessons describe a pattern; Argus shows it running.
+
+**v1 runs end to end** in Docker on synthetic data: six services, four datastores, a dashboard,
+and the evidence that it works — an acceptance gate over planted faults, a measured retrieval
+evaluation, and golden questions for the AI analyst. [Start here](argus/README.md).
+
+[![Argus overview](argus/docs/img/overview.png)](argus/README.md)
 
 ## How each lesson is organised
 
