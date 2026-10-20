@@ -132,7 +132,7 @@ class LLMSettings(BaseSettings):
     llm_provider: str = "openai_compat"
 
     openai_base_url: str = "https://api.groq.com/openai/v1"
-    openai_model: str = "llama-3.3-70b-versatile"
+    openai_model: str = "openai/gpt-oss-120b"
     openai_api_key: str = ""
     #: native | weak | none -- drives full agent loop vs constrained mode.
     openai_tool_calling: str = "native"

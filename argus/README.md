@@ -10,8 +10,8 @@ a YAML file, not writing code.
 > **Status — October 2026: detection runs end to end.** The Docker stack (ClickHouse, Postgres,
 > pgvector, Valkey), Prism (query layer), Pulse (KPIs) and Sentry (rules) run on synthetic data
 > with planted faults. The acceptance gate passes: every planted fault caught, the negative control
-> suppressed, zero unexplained alerts. 150 unit tests. Codex, the Analyst and the dashboard are the
-> roadmap below. This README says which parts run today and which are still the plan.
+> suppressed, zero unexplained alerts. Codex (the knowledge base) answers with hybrid search,
+> measured on its own questions. 162 unit tests. The Analyst and the dashboard are the roadmap below. This README says which parts run today and which are still the plan.
 
 I'm [Maicon Abreu](https://www.linkedin.com/in/mbdabreu/) — 20 years in revenue assurance and fraud,
 now delivering data and AI programs. Argus is the system I wish I'd had: the controls I've worked
@@ -57,7 +57,7 @@ cd argus
 python -m venv .venv && . .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -e "libs/argus-core[test]" -r services/prism/requirements.txt -r services/pulse/requirements.txt
 
-python -m pytest tests                               # 150 unit tests, no network needed
+python -m pytest tests                               # 162 unit tests, no network needed
 python datamodel/seed/generate.py --days 30 --dry-run   # synthetic data + planted faults, no database
 ```
 
@@ -79,8 +79,8 @@ for what it does.
 | **prism** | 8000 | Query layer. Serves **lenses** — named, validated SQL views with a closed field list. | ✅ built, tested |
 | **pulse** | 8001 | KPI engine. Computes series, breakdowns, forecasts and anomalies. | ✅ built, tested |
 | **sentry** | 8002 | Rule engine. Runs **probes** against lenses and raises **alerts**. | ✅ built, tested |
-| **codex** | 8004 | Knowledge base. Chunks, embeds and retrieves policy documents. | 🔜 next (schema ✅) |
-| **analyst** | 8003 | AI agent. Answers questions using lens queries *and* Codex retrieval. | 🔜 planned |
+| **codex** | 8004 | Knowledge base. Chunks, embeds and retrieves policy documents. | ✅ built, measured |
+| **analyst** | 8003 | AI agent. Answers questions using lens queries *and* Codex retrieval. | 🔜 next |
 | **deck** | 3000 | Dashboard. Renders YAML-defined views and panels. | 🔜 planned |
 
 ```text
@@ -119,13 +119,15 @@ numbers.
 | `services/sentry/` | The rule engine — per-subject probes, systemic suppression, self-closing alerts |
 | `config/rules/` | The controls: feed completeness, volume spike, rating accuracy, write-off drift |
 | `datamodel/acceptance.py` | The gate: every planted fault caught, the negative control suppressed |
+| `services/codex/` | The knowledge base — heading-aware chunking, local embeddings, hybrid search |
+| `config/codex/` | Collections, five fictional policy documents, and the retrieval evaluation questions |
 | `config/kpis/` | Five KPI definitions: leakage, volume, collected revenue, mis-rating, unbilled |
 | `docker-compose.yaml` | The local stack; `tools` runs migrations, seeding and computation |
 | `config/lenses/` | Six lens definitions (usage trends, rating quality, collection mix, alerts, …) |
 | `datamodel/migrations/` | Schemas for ClickHouse (analytics), Postgres (pulse, sentry, analyst) and pgvector (codex) |
 | `datamodel/migrate.py` | Migration runner for all three engines |
 | `datamodel/seed/` | Synthetic-data generator and the fault manifest |
-| `tests/unit/` | 150 tests: SQL builder and injection payloads, migration splitter, seeder, Prism API, KPI and rule engines |
+| `tests/unit/` | 162 tests: SQL builder and injection payloads, migration splitter, seeder, Prism API, KPI and rule engines, chunking and fusion |
 
 ## Concepts
 
@@ -173,6 +175,24 @@ too: alerting on everything is not a pass.
 The gate fails closed. Zero cases is a failure, not a vacuous pass; every fault date is checked,
 not a sample; and an open alert the manifest cannot explain fails the run.
 
+## Hybrid search, measured on our own documents
+
+Codex searches five fictional policy documents (write-offs, collections, rating changes,
+escalation, the control library) two ways and blends the scores. Before choosing a weighting,
+we measured — 16 questions, half naming an exact ID, half in plain English:
+
+| Retriever | Exact-ID questions | Plain-English questions | All |
+|---|---|---|---|
+| Keyword only | **8/8** | 5/8 | 13/16 |
+| Vector only | 5/8 | **7/8** | 12/16 |
+| **Hybrid** | **8/8** | **7/8** | **15/16** |
+
+Each retriever fails on a different kind of question, and the blend fixes both. Embeddings put
+`CTL-REV-003` and `CTL-REV-004` almost on top of each other; keyword search finds the exact token.
+A cross-encoder reranker added nothing on this corpus, so it is off by default. Off-topic
+questions return no passages at all, so the Analyst can say "I don't know". Run it yourself:
+`docker compose run --rm tools retrieval-eval`.
+
 ## LLM providers (planned for the Analyst)
 
 The design uses two provider implementations to reach about ten backends, because nearly every
@@ -191,7 +211,7 @@ Embeddings are deliberately **independent** of the chat provider: retrieval runs
 1. ✅ **Pulse** — KPI series and anomalies, reading through Prism.
 2. ✅ **Docker stack** — `docker compose` with a `tools` container for migrate / seed / compute.
 3. ✅ **Sentry** — probes and alerts; the acceptance gate that checks every planted fault is caught.
-4. **Codex** — document chunking, local embeddings, retrieval.
+4. ✅ **Codex** — document chunking, local embeddings, hybrid retrieval, measured.
 5. **Analyst** — the AI agent, with data tools and knowledge tools kept apart.
 6. **Deck** — the dashboard.
 7. **Docs** — architecture, data model, config reference, runbook and decision records.

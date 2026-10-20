@@ -1,0 +1,58 @@
+# Retrieval evaluation -- questions with the section that should answer them.
+#
+# The point is to MEASURE retrieval on our own documents before trusting any
+# default weighting. Two kinds of question on purpose:
+#   exact  -- names an ID or a code (CTL-REV-004, WO-POL-3, ESC-1). Keyword
+#             search should win: the ID is an exact token.
+#   prose  -- asks in ordinary words, with none of the document's IDs. Semantic
+#             search should win: the words differ, the meaning matches.
+# A case passes when the expected section is in the top 3 results.
+questions:
+  - kind: exact
+    question: What does CTL-REV-004 check?
+    expect: CTL-REV-004 Write-off drift
+  - kind: exact
+    question: Who approves under WO-POL-3?
+    expect: WO-POL-3 Re-rating and credits
+  - kind: exact
+    question: What are the response times in ESC-1?
+    expect: ESC-1 Severity and response times
+  - kind: exact
+    question: Which probe implements CTL-REV-002?
+    expect: CTL-REV-002 Duplicate ingestion
+  - kind: exact
+    question: What does RCP-4 require after a deployment?
+    expect: RCP-4 Watch
+  - kind: exact
+    question: Which reason codes does WO-POL-5 allow?
+    expect: WO-POL-5 Records
+  - kind: exact
+    question: What is CTL-REV-005 about?
+    expect: CTL-REV-005 Unbilled usage
+  - kind: exact
+    question: What does PR-FEED-COMPLETENESS do when half the sites drop?
+    expect: CTL-REV-001 Feed completeness
+  - kind: prose
+    question: Who has to sign off when we cancel a large unpaid balance?
+    expect: WO-POL-2 Approval limits
+  - kind: prose
+    question: What should we do if the system counted the same usage twice?
+    expect: CTL-REV-002 Duplicate ingestion
+  - kind: prose
+    question: Why might payments stop arriving a week after a batch job fails?
+    expect: Dunning runs
+  - kind: prose
+    question: How long can a customer have to pay after agreeing a new date?
+    expect: Promises to pay
+  - kind: prose
+    question: When are we not allowed to release a price change?
+    expect: RCP-3 Deploy
+  - kind: prose
+    question: Can we write off money a customer is still arguing about?
+    expect: WO-POL-4 Disputed revenue
+  - kind: prose
+    question: What does it mean when every location drops on the same day?
+    expect: CTL-REV-001 Feed completeness
+  - kind: prose
+    question: Who is responsible for a finding until it is resolved?
+    expect: ESC-2 Who owns what

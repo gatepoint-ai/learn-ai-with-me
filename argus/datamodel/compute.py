@@ -15,6 +15,7 @@ import time
 import httpx
 
 STEPS = [
+    ("codex", os.getenv("CODEX_URL", "http://codex:8000"), "/codex/v1/ingest"),
     ("pulse", os.getenv("PULSE_URL", "http://pulse:8000"), "/pulse/v1/recalculate"),
     ("sentry", os.getenv("SENTRY_URL", "http://sentry:8000"), "/sentry/v1/run"),
 ]
@@ -42,12 +43,16 @@ def main() -> int:
             body = client.post(f"{base}{path}").json()
             failed = body.get("failed", 0)
             failures += failed
-            total = body.get("kpis", body.get("probes", "?"))
+            total = body.get("kpis", body.get("probes", body.get("collections", "?")))
             print(f"  {'x' if failed else '+'} {name}: {total} evaluated, {failed} failed")
             for r in body.get("results", []):
-                label = r.get("kpi") or r.get("probe")
+                label = r.get("kpi") or r.get("probe") or r.get("collection")
                 if r.get("error"):
                     extra = r["error"]
+                elif "chunks_written" in r:
+                    extra = (f"{r['documents']} documents: {r['ingested']} ingested, "
+                             f"{r['unchanged']} unchanged, {r['chunks_written']} chunks")
+                    r = {**r, "status": "succeeded"}
                 elif "periods" in r:
                     extra = f"{r['periods']} periods, {r['anomalies']} anomalies"
                 else:
