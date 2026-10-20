@@ -23,7 +23,9 @@ from typing import Any
 _IDENTIFIER = re.compile(r"\b[A-Za-z]+(?:[-_][A-Za-z0-9]+)*[-_]\d+[A-Za-z0-9]*\b")
 _ISO_DATE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 _MONTH_DAY = re.compile(
-    r"\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\b"
+    # "16-19 Oct" and "16 to 19 Oct" are one date range, not the figure 16.
+    r"\b\d{1,2}\s*(?:-|to)\s*\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\b"
+    r"|\b\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\b"
     r"|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2}\b",
     re.IGNORECASE,
 )
