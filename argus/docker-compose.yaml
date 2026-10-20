@@ -137,6 +137,20 @@ services:
     depends_on:
       codex-db: { condition: service_healthy }
 
+  # The only service that needs a secret: the LLM key, from .env.
+  analyst:
+    <<: *service
+    build:
+      context: .
+      dockerfile: services/analyst/Dockerfile
+    ports:
+      - "127.0.0.1:8003:8000"
+    depends_on:
+      prism: { condition: service_healthy }
+      pulse: { condition: service_healthy }
+      sentry: { condition: service_healthy }
+      codex: { condition: service_healthy }
+
   # --- one-off tasks ------------------------------------------------------------
   # docker compose run --rm tools bootstrap | migrate | seed | compute | accept | status
 

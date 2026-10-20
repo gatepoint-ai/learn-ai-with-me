@@ -52,6 +52,7 @@ rules:
             - { field: baseline_days, op: gte, value: 7 }
           limit: 10000
         value_field: volume_change_ratio
+        value_label: volume vs the site's normal
         subject_field: site_id
         subject_type: site
         comparator: lt
@@ -79,6 +80,7 @@ rules:
             - { field: baseline_days, op: gte, value: 7 }
           limit: 10000
         value_field: volume_change_ratio
+        value_label: volume vs the site's normal
         subject_field: site_id
         subject_type: site
         comparator: gt
@@ -108,6 +110,7 @@ rules:
             - { field: baseline_misrated_rate, op: is_not_null }
           limit: 10000
         value_field: misrated_rate
+        value_label: share of events mis-rated
         baseline_field: baseline_misrated_rate
         subject_field: customer_class
         subject_type: customer_class
@@ -137,6 +140,7 @@ rules:
             - { field: baseline_written_off_share, op: is_not_null }
           limit: 10000
         value_field: written_off_share
+        value_label: share of expected revenue written off
         baseline_field: baseline_written_off_share
         subject_field: site_id
         subject_type: site
