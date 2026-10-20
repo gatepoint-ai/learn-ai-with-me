@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
     if state.llm.openai_api_key:
         state.client = agent.OpenAICompatClient(
             state.llm.openai_base_url, state.llm.openai_api_key, state.llm.openai_model,
-            state.llm.request_timeout)
+            state.llm.request_timeout, state.llm.openai_fallback_model or None)
     else:
         # Start without a key so the rest of the stack stays usable; /ask says why it can't answer.
         log.warning("no_llm_key", hint="set OPENAI_API_KEY in .env")
@@ -115,6 +115,7 @@ def ask(req: AskRequest) -> dict[str, Any]:
                                   "message": "Set OPENAI_API_KEY in argus/.env and restart the analyst."})
     conversation_id = req.conversation_id or uuid.uuid4()
     history = _history(conversation_id) if req.conversation_id else []
+    state.client.models_used = set()
     try:
         result = agent.run(state.client, state.toolbox, req.question, history,
                            state.llm.max_tool_iterations)
@@ -134,7 +135,7 @@ def ask(req: AskRequest) -> dict[str, Any]:
                         "error": c.is_error} for c in result.tool_calls],
         "sources": cited,
         "retrieved": retrieved,
-        "model": state.llm.openai_model,
+        "model": ", ".join(sorted(state.client.models_used)) or state.llm.openai_model,
         "tokens": {"input": result.input_tokens, "output": result.output_tokens},
         "stopped": result.stopped,
     }

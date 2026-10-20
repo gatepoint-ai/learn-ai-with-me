@@ -26,8 +26,8 @@ import httpx
 
 #: Rows handed to the model per tool call. A lens can return thousands; the
 #: model needs a sample and the count, not a context window full of rows.
-MAX_ROWS = 40
-MAX_CHARS = 8000
+MAX_ROWS = 25
+MAX_CHARS = 5000
 
 
 @dataclass(frozen=True)

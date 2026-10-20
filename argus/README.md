@@ -1,34 +1,33 @@
 # Argus
 
 An AI revenue-assurance platform, **built in public**. It ingests usage events, computes KPIs,
-detects revenue leakage with configurable rules, and answers natural-language questions grounded
-in both live data and a policy knowledge base.
+detects revenue leakage with configurable rules, and answers questions in plain English — grounded
+in live data and a policy knowledge base, with every figure checked against its source.
 
-Everything is config-driven: adding a metric, a check, a data view or a dashboard page means adding
-a YAML file, not writing code.
+![The Argus overview: KPI tiles, the leakage and mis-rating charts with flagged days, and open alerts explained in one sentence each](docs/img/overview.png)
 
-> **Status — October 2026: detection runs end to end.** The Docker stack (ClickHouse, Postgres,
-> pgvector, Valkey), Prism (query layer), Pulse (KPIs) and Sentry (rules) run on synthetic data
-> with planted faults. The acceptance gate passes: every planted fault caught, the negative control
-> suppressed, zero unexplained alerts. Codex (the knowledge base) answers with hybrid search,
-> measured on its own questions. 162 unit tests. The Analyst and the dashboard are the roadmap below. This README says which parts run today and which are still the plan.
+> **v1 — October 2026.** All six services run end to end on synthetic data with planted faults.
+> The acceptance gate passes (every planted fault caught, the negative control suppressed, nothing
+> unexplained); hybrid search scores 15/16 on its own questions; the AI analyst passes ‹ANALYST›
+> of its golden questions; 176 unit tests. Demo data only — see [Limits](#limits).
 
 I'm [Maicon Abreu](https://www.linkedin.com/in/mbdabreu/) — 20 years in revenue assurance and fraud,
 now delivering data and AI programs. Argus is the system I wish I'd had: the controls I've worked
 with for two decades, rebuilt around a language model that is allowed to explain and never allowed
-to calculate. Each piece is explained in a lesson in this repo —
-see the [lesson index](../README.md).
+to calculate. Each idea is explained in a lesson in this repo — see the [lesson index](../README.md).
 
-## Run the stack — Docker, no API key
+## Run it
+
+You need Docker and, for the AI analyst only, a free [Groq](https://console.groq.com) API key.
 
 ```bash
 cd argus
-docker compose up -d --build                 # datastores + Prism + Pulse + Sentry
-docker compose run --rm tools bootstrap      # migrate, seed, compute KPIs, run rules, acceptance gate
-
-curl localhost:8001/pulse/v1/kpis            # KPI values and status
-curl localhost:8002/sentry/v1/alerts         # open alerts, each explained in one sentence
+cp .env.example .env                         # set OPENAI_API_KEY -- only the analyst uses it
+docker compose up -d --build                 # 4 datastores + 6 services
+docker compose run --rm tools bootstrap      # migrate, seed, ingest, compute, run rules, acceptance gate
 ```
+
+Open **<http://localhost:3000>**. From an empty machine, the build and bootstrap take ‹TIMING›.
 
 The bootstrap ends with the acceptance gate:
 
@@ -43,143 +42,79 @@ The bootstrap ends with the acceptance gate:
   GATE: PASS
 ```
 
-Ask Prism directly — the query is a description, never SQL:
+Without Docker, the unit tests and the data generator run on any Python 3.12+:
 
 ```bash
-curl -X POST localhost:8000/prism/v1/lenses/site_volume_baseline/query   -H 'content-type: application/json'   -d '{"fields":[{"field":"usage_date"},{"field":"site_id"},{"field":"volume_change_ratio"}],
-       "filters":[{"field":"volume_change_ratio","op":"lt","value":-0.5}]}'
+cd argus && python -m venv .venv && . .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -e "libs/argus-core[test]" fastapi httpx
+python -m pytest tests                                     # 176 tests, no network, no key
+python datamodel/seed/generate.py --days 30 --dry-run      # the planted faults, no database
 ```
 
-## Try it without Docker — no API key
+Operating notes and troubleshooting: [docs/RUNBOOK.md](docs/RUNBOOK.md).
 
-```bash
-cd argus
-python -m venv .venv && . .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -e "libs/argus-core[test]" -r services/prism/requirements.txt -r services/pulse/requirements.txt
+## Ask it
 
-python -m pytest tests                               # 162 unit tests, no network needed
-python datamodel/seed/generate.py --days 30 --dry-run   # synthetic data + planted faults, no database
-```
+![The Ask page: a question, the analyst's answer citing the control library, the tools it used, and "figures verified against the data"](docs/img/ask.png)
 
-The seeder's dry run prints the four faults it plants. In the full stack, the rule engine has to
-find every one of them.
+Every answer shows the tools the analyst called, the passages it cited, and whether **every figure
+in the answer was found in the data the tools returned**. A number the model worked out itself is
+flagged to the reader, not hidden.
 
-## Why "Argus"
+## How it is built
 
-Argus Panoptes was the hundred-eyed watchman who never slept with every eye at once. Revenue
-assurance is the same job: watch a large surface continuously and notice the one thing that changed.
+Six services over four datastores. Each is named for what it does.
 
-## Architecture
+| Service | Port | Responsibility |
+|---|---|---|
+| **prism** | 8000 | Query layer. Serves **lenses** — named SQL views with a closed list of fields. The only place SQL is generated. |
+| **pulse** | 8001 | KPI engine. Daily values, breakdowns, direction-aware anomalies and a weekly-seasonal forecast. |
+| **sentry** | 8002 | Rule engine. Judges every site and customer class separately; suppresses systemic events; alerts close themselves. |
+| **analyst** | 8003 | AI agent. Seven read-only tools, six denied capabilities, a bounded loop and a number check. |
+| **codex** | 8004 | Knowledge base. Heading-aware chunks, local embeddings, hybrid keyword + vector search. |
+| **deck** | 3000 | Dashboard. Pages are YAML; every figure comes from a service API. |
 
-Six services over four datastores. The service names follow the watchman theme, and each is named
-for what it does.
+The design rests on four rules — [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) has the detail:
 
-| Service | Port | Responsibility | Status |
-|---|---|---|---|
-| **prism** | 8000 | Query layer. Serves **lenses** — named, validated SQL views with a closed field list. | ✅ built, tested |
-| **pulse** | 8001 | KPI engine. Computes series, breakdowns, forecasts and anomalies. | ✅ built, tested |
-| **sentry** | 8002 | Rule engine. Runs **probes** against lenses and raises **alerts**. | ✅ built, tested |
-| **codex** | 8004 | Knowledge base. Chunks, embeds and retrieves policy documents. | ✅ built, measured |
-| **analyst** | 8003 | AI agent. Answers questions using lens queries *and* Codex retrieval. | 🔜 next |
-| **deck** | 3000 | Dashboard. Renders YAML-defined views and panels. | 🔜 planned |
+1. **Everything queries through Prism.** No other service holds analytics credentials. One query
+   path means one injection surface, one cache, one audit point — and the dashboard and the chat
+   can't disagree about a number.
+2. **Data and knowledge are separate tool families.** "How much leaked" comes from data tools;
+   "what does the policy say" from the knowledge tool. Each tool says when *not* to use it.
+3. **The model never calculates.** Figures are computed in SQL and deterministic Python. After the
+   analyst answers, every figure is checked against the tool results.
+4. **Constraints live in the architecture, not the prompt.** The analyst cannot run rules, edit
+   alerts, write SQL, change config or browse the web. Each denial is declared in code with the
+   failure it prevents.
 
-```text
-   browser ──► deck (Next.js)
-                 │  server-side route handlers
-     ┌───────────┼────────────┬───────────┐
-     ▼           ▼            ▼           ▼
-   prism       pulse       sentry      analyst ──► codex
-     │           │            │           │          │
-     ▼           └── via prism ┘           └── tools ─┘
- ClickHouse   ┌─────────────────┐      ┌──────────┐
-  analytics   │ Postgres        │      │ pgvector │
-   + Valkey   │ pulse / sentry  │      │  codex   │
-              │ / analyst       │      └──────────┘
-              └─────────────────┘
-```
+## Evidence
 
-Two rules carry the design:
-
-**1. Everything queries through Prism.** Pulse and Sentry do not hold database credentials for the
-analytics store — they ask Prism. One query path means one cache, one audit point, and one place
-where SQL is generated.
-
-**2. Data and knowledge are separate tool families.** The Analyst answers "how much leaked last
-month" from a lens and "what is our write-off policy" from Codex. Their tool descriptions say so
-explicitly, because models that are not told the difference will answer policy questions from stale
-numbers.
-
-## What's in the repo today
-
-| Path | What it is |
-|---|---|
-| `libs/argus-core/` | Shared core: settings, datastore clients, config schemas, and the SQL compiler with the field whitelist |
-| `services/prism/` | The query layer — FastAPI service, Dockerfile |
-| `services/pulse/` | The KPI engine — pure, tested arithmetic in `engine.py`; reads only through Prism |
-| `services/sentry/` | The rule engine — per-subject probes, systemic suppression, self-closing alerts |
-| `config/rules/` | The controls: feed completeness, volume spike, rating accuracy, write-off drift |
-| `datamodel/acceptance.py` | The gate: every planted fault caught, the negative control suppressed |
-| `services/codex/` | The knowledge base — heading-aware chunking, local embeddings, hybrid search |
-| `config/codex/` | Collections, five fictional policy documents, and the retrieval evaluation questions |
-| `config/kpis/` | Five KPI definitions: leakage, volume, collected revenue, mis-rating, unbilled |
-| `docker-compose.yaml` | The local stack; `tools` runs migrations, seeding and computation |
-| `config/lenses/` | Six lens definitions (usage trends, rating quality, collection mix, alerts, …) |
-| `datamodel/migrations/` | Schemas for ClickHouse (analytics), Postgres (pulse, sentry, analyst) and pgvector (codex) |
-| `datamodel/migrate.py` | Migration runner for all three engines |
-| `datamodel/seed/` | Synthetic-data generator and the fault manifest |
-| `tests/unit/` | 162 tests: SQL builder and injection payloads, migration splitter, seeder, Prism API, KPI and rule engines, chunking and fusion |
-
-## Concepts
-
-| Term | What it is |
-|---|---|
-| **lens** | A named SQL view plus a closed list of queryable fields. `config/lenses/*.yaml` |
-| **probe** | One threshold test over a lens. The executable unit of a rule. |
-| **rule** | A group of related probes with an owner and a process. |
-| **alert** | A probe breach, attributed to a subject (a site, a customer class). |
-| **subject** | Whatever an alert is about — the entity the probe groups by. |
-| **KPI** | A measure over a lens at a time grain, with thresholds. |
-| **collection** | A retrievable document corpus. |
-| **view / panel** | A dashboard page and the widgets on it. |
-
-## The field whitelist
-
-A lens declares its fields. `argus_core.sqlbuilder` resolves **every** identifier through that list
-before it reaches SQL, and binds every literal as a parameter. A field the lens does not declare
-cannot be selected, filtered, grouped or sorted — there is no path from a request string to a SQL
-identifier.
-
-This is the platform's whole injection surface, so it is tested first and hard: 14
-identifier-shaped attack payloads, hostile filter values proven bound not inlined, and both dialects
-covered.
-
-## Synthetic data has faults on purpose
+### Synthetic data has faults on purpose
 
 The seeder plants four documented faults **and one negative control**, and writes a manifest
-describing them:
+the acceptance gate checks against:
 
-| Fault | Shape | Probe expected to catch it |
+| Planted | Shape | Must be |
 |---|---|---|
-| `feed_outage` | one site loses ~85% of a day's volume | `PR-FEED-COMPLETENESS` |
-| `volume_spike` | one site doubles for a day | `PR-VOLUME-SPIKE` |
-| `misrating` | one customer class mis-rated for 3 days | `PR-RATING-ACCURACY` |
-| `collection_shift` | one site's write-off share jumps for 4 days | `PR-COLLECTION-DRIFT` |
-| `systemic_dip` | **every** site loses ~70% on one day, like a public holiday | must be **suppressed**, not alerted |
+| `feed_outage` | one site loses ~85% of a day's volume | alerted by `PR-FEED-COMPLETENESS` |
+| `volume_spike` | one site doubles for a day | alerted by `PR-VOLUME-SPIKE` |
+| `misrating` | one customer class mis-rated for 3 days | alerted by `PR-RATING-ACCURACY` |
+| `collection_shift` | one site's write-off share jumps for 4 days | alerted by `PR-COLLECTION-DRIFT` |
+| `systemic_dip` | **every** site loses ~70% on one day, like a public holiday | **suppressed**, not alerted |
 
-The manifest is the contract between the seeder and Sentry: the acceptance gate
-([`datamodel/acceptance.py`](datamodel/acceptance.py)) reads it and checks every fault on every
-day. A seeder that produced clean data would prove only that the stack starts — "no alerts" and
-"detector broken" would look identical. The negative control proves the opposite failure is caught
-too: alerting on everything is not a pass.
+A seeder that produced clean data would prove only that the stack starts — "no alerts" and
+"detector broken" look identical. The gate fails closed: zero cases is a failure, every fault day
+is checked, and an open alert the manifest cannot explain fails the run.
 
-The gate fails closed. Zero cases is a failure, not a vacuous pass; every fault date is checked,
-not a sample; and an open alert the manifest cannot explain fails the run.
+Two things the faults taught: network-wide KPIs caught **one** of the four (a site losing 85% of
+its volume barely moves the network total), while per-site rules caught all four; and on day 3 of
+the mis-rating fault, days 1–2 had already raised the statistical baseline — the fixed rule still
+caught it. That is why both layers exist.
 
-## Hybrid search, measured on our own documents
+### Hybrid search, measured on our own documents
 
-Codex searches five fictional policy documents (write-offs, collections, rating changes,
-escalation, the control library) two ways and blends the scores. Before choosing a weighting,
-we measured — 16 questions, half naming an exact ID, half in plain English:
+16 questions over five fictional policy documents, half naming an exact ID, half in plain English
+(hit@3, `docker compose run --rm tools retrieval-eval`):
 
 | Retriever | Exact-ID questions | Plain-English questions | All |
 |---|---|---|---|
@@ -187,34 +122,54 @@ we measured — 16 questions, half naming an exact ID, half in plain English:
 | Vector only | 5/8 | **7/8** | 12/16 |
 | **Hybrid** | **8/8** | **7/8** | **15/16** |
 
-Each retriever fails on a different kind of question, and the blend fixes both. Embeddings put
-`CTL-REV-003` and `CTL-REV-004` almost on top of each other; keyword search finds the exact token.
-A cross-encoder reranker added nothing on this corpus, so it is off by default. Off-topic
-questions return no passages at all, so the Analyst can say "I don't know". Run it yourself:
-`docker compose run --rm tools retrieval-eval`.
+Each retriever fails on a different kind of question; the blend fixes both. Embeddings put
+`CTL-REV-003` and `CTL-REV-004` almost on top of each other — keyword search finds the exact token.
+A cross-encoder reranker added nothing here, so it is off by default. Off-topic questions return no
+passages, so the analyst can say "the documents don't cover that".
 
-## LLM providers (planned for the Analyst)
+### The analyst, on golden questions
 
-The design uses two provider implementations to reach about ten backends, because nearly every
-free LLM host speaks the OpenAI chat-completions wire format including tool calling. Switching
-backend is a `base_url` change, not a code change.
+Ten questions with checks that don't depend on the day the data was seeded
+(`docker compose run --rm tools analyst-eval`): routing to the right tool family, citing the right
+section, every figure verified — and three traps: an off-topic question, a request to add numbers
+up, and a request for an action it is denied.
 
-Default will be **Groq** — free, no credit card, fast enough for a real agent loop. **Claude** for the
-best tool-use quality. Ollama for fully offline use with no key. `.env.example` already carries the
-settings.
+‹ANALYST_TABLE›
 
-Embeddings are deliberately **independent** of the chat provider: retrieval runs locally on ONNX via
-`fastembed` — no key, no network, and no multi-gigabyte torch layer in the image.
+## The field whitelist
 
-## Roadmap
+A lens declares its fields. `argus_core.sqlbuilder` resolves **every** identifier through that list
+and binds every value as a parameter. There is no path from a request string to a SQL identifier.
+It is the platform's whole injection surface, so it is tested first and hard: 14 identifier-shaped
+attack payloads, hostile filter values proven bound not inlined, both dialects covered.
 
-1. ✅ **Pulse** — KPI series and anomalies, reading through Prism.
-2. ✅ **Docker stack** — `docker compose` with a `tools` container for migrate / seed / compute.
-3. ✅ **Sentry** — probes and alerts; the acceptance gate that checks every planted fault is caught.
-4. ✅ **Codex** — document chunking, local embeddings, hybrid retrieval, measured.
-5. **Analyst** — the AI agent, with data tools and knowledge tools kept apart.
-6. **Deck** — the dashboard.
-7. **Docs** — architecture, data model, config reference, runbook and decision records.
+## What's in the folder
+
+| Path | What it is |
+|---|---|
+| `config/` | Everything the services do, as YAML: lenses, KPIs, rules, knowledge collections and documents, dashboard pages, evaluation questions |
+| `libs/argus-core/` | Shared core: settings, clients, config schemas, the SQL compiler |
+| `services/` | The six services, one folder each |
+| `datamodel/` | Migrations, the seeder, the acceptance gate, evaluations, the `tools` image |
+| `tests/unit/` | 176 tests — no network, no key |
+| `docs/` | Architecture, runbook, screenshots |
+
+## Limits
+
+v1 is a working demo, not a product:
+
+- **Synthetic data only.** Eight fictional sites, 30 days; the policy documents are fictional.
+- **One LLM provider path.** Any OpenAI-compatible endpoint works (Groq by default, with a fallback
+  model when the free tier throttles). A native Claude client and a constrained mode for small
+  local models are not built yet.
+- **Free-tier pacing.** Groq's free tier allows 8,000 tokens a minute; a multi-step question can
+  take a minute when the tier is busy.
+- **Local only.** No authentication; ports bind to `127.0.0.1`. Not for a shared network as is.
+
+## Why "Argus"
+
+Argus Panoptes was the hundred-eyed watchman who never slept with every eye at once. Revenue
+assurance is the same job: watch a large surface continuously and notice the one thing that changed.
 
 ## License
 

@@ -134,6 +134,9 @@ class LLMSettings(BaseSettings):
     openai_base_url: str = "https://api.groq.com/openai/v1"
     openai_model: str = "openai/gpt-oss-120b"
     openai_api_key: str = ""
+    #: Used for a request when the primary model is rate limited. Free tiers
+    #: meter each model separately, so a second model is a second quota.
+    openai_fallback_model: str = "qwen/qwen3.8-27b"
     #: native | weak | none -- drives full agent loop vs constrained mode.
     openai_tool_calling: str = "native"
 

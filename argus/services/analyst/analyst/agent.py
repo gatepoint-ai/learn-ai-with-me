@@ -24,6 +24,7 @@ SYSTEM_PROMPT = """You are the Argus analyst. You answer questions about revenue
 the operations and finance teams, using only your tools.
 
 Rules -- these are not style preferences:
+0. You cover this organisation's revenue assurance only: its data, alerts, KPIs, policies and controls. For anything else -- general knowledge, other companies, current events -- say it is outside what you cover and do not answer it, even if you know the answer.
 1. Every number in your answer must come from a tool result. Never calculate, add up, \
 average or estimate a figure yourself. If a total or a difference is needed, get it with a \
 query_lens aggregate. Your answer is checked: any figure not found in the tool results is \
@@ -75,8 +76,11 @@ class OpenAICompatClient:
     is a base URL and a model name -- no SDK, no code change.
     """
 
-    def __init__(self, base_url: str, api_key: str, model: str, timeout: float) -> None:
+    def __init__(self, base_url: str, api_key: str, model: str, timeout: float,
+                 fallback_model: str | None = None) -> None:
         self.model = model
+        self.fallback_model = fallback_model
+        self.models_used: set[str] = set()
         self.http = httpx.Client(
             base_url=base_url.rstrip("/"), timeout=timeout,
             headers={"Authorization": f"Bearer {api_key}"},
@@ -84,24 +88,36 @@ class OpenAICompatClient:
 
     def chat(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]],
              tool_choice: str = "auto") -> dict[str, Any]:
-        for attempt in range(6):
+        models = [self.model] + ([self.fallback_model] if self.fallback_model else [])
+        for attempt in range(8):
+            # Alternate primary and fallback when throttled: two quotas, not one.
+            model = models[attempt % len(models)] if attempt else self.model
             r = self.http.post("/chat/completions", json={
-                "model": self.model, "messages": messages, "tools": tools,
+                "model": model, "messages": messages, "tools": tools,
                 "tool_choice": tool_choice, "temperature": 0.1,
             })
-            if r.status_code == 400 and attempt < 2 and _retryable_400(r.text):
+            if r.status_code == 413 and model != self.model and model in models:
+                # This model's per-request limit is smaller than the request.
+                # Drop it for this call and wait for the primary instead.
+                models.remove(model)
+                continue
+            if r.status_code == 400 and attempt < 3 and _retryable_400(r.text):
                 # The provider rejected the model's own output (malformed tool
                 # arguments, unparseable text). A fresh sample usually succeeds.
                 continue
-            if r.status_code == 429 and attempt < 5:
-                # Free tiers limit tokens per minute. Wait as long as the
-                # provider says, not a guess -- a guess just burns retries.
-                time.sleep(min(30.0, _retry_after(r) + 0.5))
+            if r.status_code == 429 and attempt < 7:
+                # Free tiers limit tokens per minute. Try the other model at
+                # once; when both are throttled, wait for the window the
+                # provider reports -- up to a full minute, not a guess.
+                if len(models) > 1 and attempt % len(models) == 0:
+                    continue
+                time.sleep(min(60.0, _retry_after(r) + 1.0))
                 continue
             if r.status_code >= 400:
                 raise RuntimeError(f"LLM {r.status_code}: {r.text[:300]}")
+            self.models_used.add(model)
             return r.json()
-        raise RuntimeError("LLM rate limited")  # pragma: no cover
+        raise RuntimeError("LLM rate limited on every model; try again in a minute")
 
     def close(self) -> None:
         self.http.close()
@@ -112,6 +128,12 @@ def _retryable_400(body: str) -> bool:
 
 
 def _retry_after(r: httpx.Response) -> float:
+    reset = r.headers.get("x-ratelimit-reset-tokens", "")
+    m = re.fullmatch(r"(?:(\d+)m)?([\d.]+)(ms|s)", reset)
+    if m:
+        minutes = float(m.group(1) or 0)
+        value = float(m.group(2))
+        return minutes * 60 + (value / 1000 if m.group(3) == "ms" else value)
     header = r.headers.get("retry-after")
     if header:
         try:

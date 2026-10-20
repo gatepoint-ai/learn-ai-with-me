@@ -130,22 +130,47 @@ def panel_alerts_table(panel: Panel) -> str:
             f'<th>What happened</th><th>Owner</th></tr></thead><tbody>{body}</tbody></table>{more}')
 
 
-def panel_ask(panel: Panel) -> str:
+def panel_ask(panel: Panel, question: str | None = None) -> str:
     chips = "".join(f'<button class="chip" type="button">{e(x)}</button>' for x in panel.examples)
+    turn = _rendered_turn(question) if question else ""
     return f"""
 <form id="ask-form" autocomplete="off">
   <input id="ask-input" name="q" placeholder="Ask about leakage, alerts or policy..." required minlength="2">
   <button type="submit">Ask</button>
 </form>
 <div class="chips">{chips}</div>
-<div id="ask-log"></div>"""
+<div id="ask-log">{turn}</div>"""
+
+
+def _rendered_turn(question: str) -> str:
+    """Answer a ?q= question server-side, so a link (or a screenshot) shows the answer."""
+    try:
+        r = state.http.post(f"{state.urls.analyst_url}/analyst/v1/ask", json={"question": question[:2000]})
+        d = r.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        return f'<div class="turn"><div class="q">{e(question)}</div><div class="a">Error: {e(str(exc))}</div></div>'
+    if r.status_code != 200:
+        msg = (d.get("detail") or {}).get("message", "request failed") if isinstance(d, dict) else "request failed"
+        return f'<div class="turn"><div class="q">{e(question)}</div><div class="a">Error: {e(msg)}</div></div>'
+    n = d.get("numbers") or {"ok": True, "checked": 0, "unverified": []}
+    check = (f'<span class="check ok">&#10003; {n["checked"]} figures verified against the data</span>'
+             if n["ok"] else
+             f'<span class="check bad">&#9888; unverified figures: {e(", ".join(n["unverified"]))}</span>')
+    tools = " &rarr; ".join(e(t["name"]) for t in d.get("tools_used", [])) or "none"
+    sources = "; ".join(e(x) for x in d.get("sources", []))
+    answer = json.dumps(d.get("answer", ""))
+    return (f'<div class="turn"><div class="q">{e(question)}</div>'
+            f'<div class="a" data-md="{e(answer)}"></div>'
+            f'<div class="meta">{check}<span>tools: {tools}</span>'
+            + (f'<span>sources: {sources}</span>' if sources else "")
+            + f'<span>{e(d.get("model", ""))}</span></div></div>')
 
 
 def _empty(text: str) -> str:
     return f'<p class="muted">{e(text)}</p>'
 
 
-def render_panel(panel: Panel, index: int) -> str:
+def render_panel(panel: Panel, index: int, question: str | None = None) -> str:
     if panel.type == "kpi_tiles":
         inner = panel_kpi_tiles(panel)
     elif panel.type == "kpi_chart":
@@ -153,7 +178,7 @@ def render_panel(panel: Panel, index: int) -> str:
     elif panel.type == "alerts_table":
         inner = panel_alerts_table(panel)
     else:
-        inner = panel_ask(panel)
+        inner = panel_ask(panel, question)
     wide = " wide" if panel.type in ("kpi_tiles", "alerts_table", "ask") else ""
     return f'<section class="panel{wide}"><h2>{e(panel.title)}</h2>{inner}</section>'
 
@@ -163,12 +188,12 @@ def render_panel(panel: Panel, index: int) -> str:
 # --------------------------------------------------------------------------
 
 
-def page(view: View) -> str:
+def page(view: View, question: str | None = None) -> str:
     nav = "".join(
         f'<a href="{e(v.path)}" class="{"active" if v.id == view.id else ""}">{e(v.title)}</a>'
         for v in state.views
     )
-    panels = "".join(render_panel(p, i) for i, p in enumerate(view.panels))
+    panels = "".join(render_panel(p, i, question) for i, p in enumerate(view.panels))
     return PAGE.format(title=e(view.title), nav=nav, description=e(view.description), panels=panels)
 
 
@@ -197,7 +222,7 @@ def view(path: str, request: Request) -> HTMLResponse:
     target = "/" + path.strip("/")
     for v in state.views:
         if v.path.rstrip("/") == target.rstrip("/") or (target == "/" and v.path == "/"):
-            return HTMLResponse(page(v))
+            return HTMLResponse(page(v, request.query_params.get("q")))
     raise HTTPException(404, "no such page")
 
 
@@ -265,6 +290,9 @@ footer {{ text-align:center; color:var(--muted); font-size:12px; padding:20px }}
     {{ label:'Band low', data:d.lower, borderColor:'transparent', pointRadius:0, fill:false }} ]}},
     options:{{ responsive:true, plugins:{{ legend:{{ labels:{{ filter:i => i.text !== 'Band low' }} }} }},
       scales:{{ y:{{ title:{{ display:true, text:d.unit }} }} }} }} }});
+}});
+document.querySelectorAll('[data-md]').forEach(el => {{
+  el.innerHTML = DOMPurify.sanitize(marked.parse(JSON.parse(el.dataset.md)));
 }});
 const form = document.getElementById('ask-form');
 if (form) {{
