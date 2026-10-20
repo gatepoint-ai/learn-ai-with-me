@@ -151,6 +151,18 @@ services:
       sentry: { condition: service_healthy }
       codex: { condition: service_healthy }
 
+  deck:
+    <<: *service
+    build:
+      context: .
+      dockerfile: services/deck/Dockerfile
+    ports:
+      - "127.0.0.1:3000:8000"
+    depends_on:
+      pulse: { condition: service_healthy }
+      sentry: { condition: service_healthy }
+      analyst: { condition: service_healthy }
+
   # --- one-off tasks ------------------------------------------------------------
   # docker compose run --rm tools bootstrap | migrate | seed | compute | accept | status
 

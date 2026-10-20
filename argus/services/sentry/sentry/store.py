@@ -135,6 +135,7 @@ class SentryStore:
         return self.db.fetch_all(
             """
             SELECT a.id, a.period, a.probe_id, p.name AS probe_name, r.name AS rule_name,
+                   p.spec->>'control' AS control_id, r.owner AS owner,
                    a.subject_type, a.subject_id, a.severity, a.status, a.observed_value,
                    a.baseline_value, a.threshold, a.deviation, a.summary, a.evidence,
                    a.detected_at, a.updated_at

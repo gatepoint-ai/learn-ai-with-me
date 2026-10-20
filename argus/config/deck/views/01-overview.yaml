@@ -1,0 +1,20 @@
+# Dashboard pages are config. A panel names a type and what it shows; the
+# Deck never contains page-specific code, and it reads only service APIs --
+# the same numbers the Analyst sees.
+id: overview
+title: Overview
+path: /
+description: Where revenue stands today, and what the controls have found.
+panels:
+  - type: kpi_tiles
+    title: Key indicators
+  - type: kpi_chart
+    title: Revenue leakage rate
+    kpi: leakage_rate
+  - type: kpi_chart
+    title: Mis-rating rate
+    kpi: misrating_rate
+  - type: alerts_table
+    title: Open alerts
+    status: open
+    limit: 6

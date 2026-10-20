@@ -32,10 +32,15 @@ flagged to the reader.
 search_knowledge. Do not answer a policy question from numbers, or a numbers question from \
 policy text.
 3. When you use search_knowledge, cite each passage you rely on as [Document > Section], \
-exactly as the citation field gives it.
-4. If the tools do not give you the answer, say so plainly. "The data does not show that" and \
+exactly as the citation field gives it. Cite only those passages -- never a tool name.
+4. Write figures as the tools give them: no currency symbols, units or rounding the data does \
+not carry. If the data says 5,000, write 5,000, not $5,000.
+5. For "what went wrong / which site / which day" questions, start with get_alerts: the control rules have already found the problems. Query lenses for detail, not discovery.
+6. To advise on an alert, look up its control_id in the controls collection and follow that \
+control's "When it fires" section.
+7. If the tools do not give you the answer, say so plainly. "The data does not show that" and \
 "The documents do not cover that" are good answers. Never guess.
-5. Be brief and concrete: lead with the answer, then the evidence. Name sites, dates and \
+8. Be brief and concrete: lead with the answer, then the evidence. Name sites, dates and \
 alert IDs. Say "the data shows" rather than describing models or algorithms.
 
 Today is {today}. The data covers recent daily history; use the tools to find its range."""
@@ -77,12 +82,17 @@ class OpenAICompatClient:
             headers={"Authorization": f"Bearer {api_key}"},
         )
 
-    def chat(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]]) -> dict[str, Any]:
+    def chat(self, messages: list[dict[str, Any]], tools: list[dict[str, Any]],
+             tool_choice: str = "auto") -> dict[str, Any]:
         for attempt in range(6):
             r = self.http.post("/chat/completions", json={
                 "model": self.model, "messages": messages, "tools": tools,
-                "tool_choice": "auto", "temperature": 0.1,
+                "tool_choice": tool_choice, "temperature": 0.1,
             })
+            if r.status_code == 400 and attempt < 2 and _retryable_400(r.text):
+                # The provider rejected the model's own output (malformed tool
+                # arguments, unparseable text). A fresh sample usually succeeds.
+                continue
             if r.status_code == 429 and attempt < 5:
                 # Free tiers limit tokens per minute. Wait as long as the
                 # provider says, not a guess -- a guess just burns retries.
@@ -95,6 +105,10 @@ class OpenAICompatClient:
 
     def close(self) -> None:
         self.http.close()
+
+
+def _retryable_400(body: str) -> bool:
+    return "validation failed" in body or "Parsing failed" in body or "failed_generation" in body
 
 
 def _retry_after(r: httpx.Response) -> float:
@@ -119,6 +133,7 @@ def run(client: OpenAICompatClient, toolbox: Toolbox, question: str,
         {"role": "user", "content": question},
     ]
     result = AgentResult(answer="")
+    seen: set[tuple[str, str]] = set()
     for _ in range(max_iterations):
         response = client.chat(messages, toolbox.schemas())
         usage = response.get("usage") or {}
@@ -136,7 +151,16 @@ def run(client: OpenAICompatClient, toolbox: Toolbox, question: str,
             started = time.perf_counter()
             try:
                 arguments = json.loads(call["function"].get("arguments") or "{}")
-                output = toolbox.run(name, arguments)
+                key = (name, json.dumps(arguments, sort_keys=True))
+                if key in seen:
+                    # The same call again returns the same data. Say so, instead
+                    # of letting the model spend its budget on a strategy that
+                    # already failed.
+                    output = {"note": "You already made this exact call; its result is above "
+                                      "and has not changed. Use it, or change the arguments."}
+                else:
+                    output = toolbox.run(name, arguments)
+                seen.add(key)
                 is_error = isinstance(output, dict) and "error" in output
             except Exception as exc:  # a broken tool call is data for the model
                 arguments, output, is_error = {}, {"error": str(exc)}, True
@@ -145,9 +169,21 @@ def run(client: OpenAICompatClient, toolbox: Toolbox, question: str,
             messages.append({"role": "tool", "tool_call_id": call["id"],
                              "content": json.dumps(output, default=str)})
     else:
+        # Budget spent. One last round with tools switched off: answer from what
+        # was gathered and say what could not be confirmed -- better than
+        # discarding eight tool results that probably contain the answer.
         result.stopped = "iteration_limit"
-        result.answer = ("I stopped before finishing: the question needed more tool calls than "
-                         f"the limit of {max_iterations}. Try a narrower question.")
+        messages.append({"role": "user", "content": (
+            "Tool budget used up. Answer now from the tool results above only. "
+            "If something could not be confirmed, say so.")})
+        response = client.chat(messages, toolbox.schemas(), tool_choice="none")
+        usage = response.get("usage") or {}
+        result.input_tokens += usage.get("prompt_tokens", 0)
+        result.output_tokens += usage.get("completion_tokens", 0)
+        result.answer = (response["choices"][0]["message"].get("content") or "").strip() or (
+            "I could not finish within the tool budget. Try a narrower question.")
 
-    result.numbers = verify.check(result.answer, [c.result for c in result.tool_calls])
+    # The question is a source too: "approve a write-off of 7,000" lets the
+    # answer repeat 7,000 without the model having invented it.
+    result.numbers = verify.check(result.answer, [question, *[c.result for c in result.tool_calls]])
     return result

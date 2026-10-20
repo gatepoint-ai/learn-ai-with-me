@@ -1,0 +1,11 @@
+id: alerts
+title: Alerts
+path: /alerts
+description: Every finding the control rules raised, and the ones suppressed as systemic.
+panels:
+  - type: alerts_table
+    title: Open
+    status: open
+  - type: alerts_table
+    title: Suppressed as systemic
+    status: suppressed

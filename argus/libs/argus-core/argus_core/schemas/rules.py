@@ -75,6 +75,9 @@ class Probe(BaseModel):
     #: it, "Rating accuracy: ENTERPRISE was 52.8%" does not say whether 52.8% is
     #: the accuracy or the error rate, and a reader (or a model) will guess.
     value_label: str | None = None
+    #: The business control this probe implements (see the control library in
+    #: Codex). Every alert then traces to a control, an owner and a response.
+    control: str | None = Field(default=None, pattern=r"^[A-Z]{2,6}(-[A-Z0-9]{1,8}){1,3}$")
     baseline_field: str | None = Field(default=None, pattern=IDENTIFIER_PATTERN)
     subject_field: str = Field(pattern=IDENTIFIER_PATTERN)
     subject_type: str = Field(pattern=IDENTIFIER_PATTERN)

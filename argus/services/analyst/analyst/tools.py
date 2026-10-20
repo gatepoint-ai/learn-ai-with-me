@@ -141,8 +141,8 @@ class Toolbox:
                     "type": "object",
                     "properties": {
                         "lens": {"type": "string"},
-                        "fields": {"type": "array", "items": {"type": "object", "properties": {
-                            "field": {"type": "string"}}, "required": ["field"]}},
+                        "fields": {"type": "array", "items": {"type": "string"},
+                                   "description": "field names to return"},
                         "aggregates": {"type": "array", "items": {"type": "object", "properties": {
                             "function": {"type": "string", "enum": ["sum", "count", "count_distinct", "avg", "min", "max"]},
                             "field": {"type": "string"}, "alias": {"type": "string"}},
@@ -152,9 +152,8 @@ class Toolbox:
                             "op": {"type": "string", "enum": ["eq", "ne", "gt", "gte", "lt", "lte", "in", "not_in", "between", "is_null", "is_not_null"]},
                             "value": {}}, "required": ["field", "op"]}},
                         "group_by": {"type": "array", "items": {"type": "string"}},
-                        "order_by": {"type": "array", "items": {"type": "object", "properties": {
-                            "field": {"type": "string"}, "direction": {"type": "string", "enum": ["asc", "desc"]}},
-                            "required": ["field"]}},
+                        "order_by": {"type": "string",
+                                     "description": "one field to sort by; prefix with - for descending"},
                         "limit": {"type": "integer", "minimum": 1, "maximum": 200},
                     },
                     "required": ["lens"],
@@ -181,8 +180,12 @@ class Toolbox:
             ),
             Tool(
                 "get_alerts", "data",
-                "Alerts raised by the control rules, each with a one-sentence explanation. "
-                "status: open (default), suppressed (systemic events), closed, or all.",
+                "START HERE for any question about problems, faults, outages, spikes, mis-rating "
+                "or write-offs -- the control rules have already found them. "
+                "Alerts raised by the control rules, each with a one-sentence explanation, the "
+                "control it belongs to (control_id) and its owner. status: open (default), "
+                "suppressed (systemic events), closed, or all. To say what to DO about an alert, "
+                "search_knowledge the controls collection for its control_id.",
                 {"type": "object", "properties": {
                     "status": {"type": "string", "enum": ["open", "suppressed", "closed", "all"]},
                     "since": {"type": "string", "description": "YYYY-MM-DD"},
@@ -193,8 +196,11 @@ class Toolbox:
                 "search_knowledge", "knowledge",
                 "Search the organisation's policies, procedures and control library. Use when the "
                 "question is HOW a process works, WHY a control exists, WHAT the policy says or WHO "
-                "is responsible. Do NOT use for live figures -- use the data tools. Returns passages "
-                "with a citation; quote the citation in your answer. If it returns nothing, say the "
+                "is responsible. collection 'controls' holds each control's objective, owner and "
+                "'When it fires' response -- search it by control ID (e.g. CTL-REV-004). "
+                "collection 'policies' holds write-off, collections, rating-change and escalation "
+                "policy. Do NOT use for live figures -- use the data tools. Returns passages with a "
+                "citation; quote the citation in your answer. If it returns nothing, say the "
                 "documents do not cover it.",
                 {"type": "object", "properties": {
                     "query": {"type": "string"},
@@ -206,7 +212,20 @@ class Toolbox:
         ]
 
     def _query_lens(self, a: dict[str, Any]) -> Any:
-        body = {k: a[k] for k in ("fields", "aggregates", "filters", "group_by", "order_by") if a.get(k)}
+        """Translate the flat tool arguments into Prism's query description.
+
+        The tool schema is deliberately flatter than Prism's: models make fewer
+        malformed calls against plain lists of names than nested objects.
+        """
+        body: dict[str, Any] = {k: a[k] for k in ("aggregates", "filters", "group_by") if a.get(k)}
+        if a.get("fields"):
+            body["fields"] = [f if isinstance(f, dict) else {"field": f} for f in a["fields"]]
+        order = a.get("order_by")
+        if isinstance(order, str) and order:
+            body["order_by"] = [{"field": order.lstrip("-"),
+                                 "direction": "desc" if order.startswith("-") else "asc"}]
+        elif isinstance(order, list):
+            body["order_by"] = order
         body["limit"] = min(int(a.get("limit") or 50), 200)
         result = self._post("prism", f"/prism/v1/lenses/{a['lens']}/query", body)
         if isinstance(result, dict) and "rows" in result:
@@ -221,9 +240,20 @@ class Toolbox:
         return data
 
     def _alerts(self, a: dict[str, Any]) -> Any:
-        rows = self._get("sentry", "/sentry/v1/alerts", status=a.get("status", "open"),
+        status = a.get("status", "open")
+        rows = self._get("sentry", "/sentry/v1/alerts", status=status,
                          since=a.get("since"), severity=a.get("severity"))
-        if isinstance(rows, list):
-            keep = ("period", "probe_name", "rule_name", "subject_id", "severity", "status", "summary")
-            return {"count": len(rows), "rows": [{k: r.get(k) for k in keep} for r in rows]}
-        return rows
+        if not isinstance(rows, list):
+            return rows
+        keep = ("period", "control_id", "owner", "subject_id", "severity", "status", "summary")
+        out: dict[str, Any] = {"count": len(rows), "rows": [{k: r.get(k) for k in keep} for r in rows]}
+        if a.get("severity"):
+            # Counted in code, so a model that filtered too narrowly can see what
+            # it is missing instead of retrying the same filter.
+            everything = self._get("sentry", "/sentry/v1/alerts", status=status, since=a.get("since"))
+            if isinstance(everything, list):
+                counts: dict[str, int] = {}
+                for r in everything:
+                    counts[r["severity"]] = counts.get(r["severity"], 0) + 1
+                out["all_severities"] = counts
+        return out
