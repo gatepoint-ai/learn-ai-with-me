@@ -24,6 +24,10 @@ class CollectionSpec(BaseModel):
     chunk_overlap: int = Field(default=200, ge=0, le=2000)
     top_k: int = Field(default=5, ge=1, le=50)
     similarity_threshold: float = Field(default=0.35, ge=0.0, le=1.0)
+    #: Share of the hybrid score that comes from keyword (full-text) search;
+    #: the rest comes from vector similarity. A corpus full of exact IDs wants
+    #: more keyword weight than a prose one -- measure it, don't assume it.
+    keyword_weight: float = Field(default=0.4, ge=0.0, le=1.0)
     rerank: bool = True
 
     def model_post_init(self, _context: object) -> None:

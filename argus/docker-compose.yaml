@@ -127,6 +127,16 @@ services:
       prism: { condition: service_healthy }
       postgres: { condition: service_healthy }
 
+  codex:
+    <<: *service
+    build:
+      context: .
+      dockerfile: services/codex/Dockerfile
+    ports:
+      - "127.0.0.1:8004:8000"
+    depends_on:
+      codex-db: { condition: service_healthy }
+
   # --- one-off tasks ------------------------------------------------------------
   # docker compose run --rm tools bootstrap | migrate | seed | compute | accept | status
 

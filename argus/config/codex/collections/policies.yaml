@@ -1,0 +1,20 @@
+# Policies and procedures: how revenue is billed, collected, written off and
+# escalated. Prose-heavy, so semantic search carries most of the weight.
+name: policies
+description: >
+  Revenue policies and operating procedures -- write-offs, disputes, collections,
+  rating changes, escalation. Use for HOW a process works, WHAT the policy says
+  and WHO is responsible. Never for live figures.
+sources: ["policies/**/*.md"]
+chunk_size: 900
+chunk_overlap: 150
+top_k: 5
+# Measured: off-topic questions reach ~0.42 cosine with this model, relevant
+# passages ~0.6+. A vector-only match below 0.5 is treated as "no answer".
+similarity_threshold: 0.50
+keyword_weight: 0.4
+# Measured on config/codex/eval: the cross-encoder added no hits on this corpus
+# (15/16 with and without it) and costs latency on every query -- and it blurs
+# IDs like CTL-REV-003 vs 004 the same way embeddings do. Off until it earns
+# its place on a larger corpus.
+rerank: false

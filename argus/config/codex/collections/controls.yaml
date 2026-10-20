@@ -1,0 +1,23 @@
+# The control library: one section per control, each with an ID. People ask
+# for controls by ID ("what does CTL-REV-004 check?"), and an ID is an exact
+# token -- keyword search finds it where embeddings blur it with its
+# neighbours. So keywords get the larger weight here. Measured, not assumed:
+# see config/codex/eval/ and `docker compose run --rm tools retrieval-eval`.
+name: controls
+description: >
+  The revenue assurance control library -- each control's ID, objective, owner,
+  frequency, the probe that implements it and what to do when it fires. Use for
+  WHY a control exists and WHAT it checks.
+sources: ["controls/**/*.md"]
+chunk_size: 900
+chunk_overlap: 100
+top_k: 5
+# Measured: off-topic questions reach ~0.42 cosine with this model, relevant
+# passages ~0.6+. A vector-only match below 0.5 is treated as "no answer".
+similarity_threshold: 0.50
+keyword_weight: 0.6
+# Measured on config/codex/eval: the cross-encoder added no hits on this corpus
+# (15/16 with and without it) and costs latency on every query -- and it blurs
+# IDs like CTL-REV-003 vs 004 the same way embeddings do. Off until it earns
+# its place on a larger corpus.
+rerank: false

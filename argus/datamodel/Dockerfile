@@ -12,6 +12,9 @@ COPY libs/argus-core /app/libs/argus-core
 RUN pip install /app/libs/argus-core
 
 COPY datamodel /app/datamodel
+
+# Evaluation questions and other config the tasks read.
+COPY config /config
 COPY datamodel/tasks.sh /usr/local/bin/argus-task
 RUN chmod +x /usr/local/bin/argus-task
 
