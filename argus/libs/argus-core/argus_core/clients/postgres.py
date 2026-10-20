@@ -71,9 +71,15 @@ class PostgresClient:
             cur.executemany(sql, rows)
             return cur.rowcount
 
-    def ping(self) -> bool:
+    def ping(self, timeout: float = 2.0) -> bool:
+        """Reachability for health checks -- bounded, so /health never hangs.
+
+        The pool otherwise waits up to 30 seconds for a connection, longer than
+        any container health-check timeout; a database that does not exist yet
+        would then make a running service look dead.
+        """
         try:
-            with self.connection() as conn, conn.cursor() as cur:
+            with self.pool.connection(timeout=timeout) as conn, conn.cursor() as cur:
                 cur.execute("SELECT 1")
                 return cur.fetchone() is not None
         except Exception:

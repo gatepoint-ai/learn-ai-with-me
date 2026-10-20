@@ -14,7 +14,7 @@ from datetime import date
 from typing import Any
 
 import httpx
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from argus_core.clients.postgres import PostgresClient
 from argus_core.config import ConfigError, load_lenses, load_rules, validate_lens_references
@@ -77,11 +77,22 @@ async def lifespan(app: FastAPI):
             f"@{pg.postgres_host}:{pg.postgres_port}/sentry"
         )
     )
-    state.store.sync_rules(state.rulesets)
+    _sync_rules()
     log.info("sentry_ready", probes=[p.id for p in state.probes])
     yield
     state.prism.close()
     state.store.db.close()
+
+
+def _sync_rules() -> bool:
+    """Mirror rule config into the database, tolerating one not yet migrated (see Pulse)."""
+    try:
+        state.store.sync_rules(state.rulesets)
+        return True
+    except Exception as exc:
+        log.warning("rules_not_synced", reason=str(exc).splitlines()[0][:200],
+                    hint="run: docker compose run --rm tools migrate")
+        return False
 
 
 app = FastAPI(title="Argus Sentry", description="Rule engine", version="0.1.0", lifespan=lifespan)
@@ -99,6 +110,9 @@ def _rows(probe: Probe) -> list[dict[str, Any]]:
 @app.post(f"{API}/run")
 def run() -> dict[str, Any]:
     """Evaluate every active probe. Idempotent: safe to run twice."""
+    if not _sync_rules():
+        raise HTTPException(503, {"error": "not_migrated",
+                                  "message": "sentry database has no tables yet; run the migrations"})
     run_id = state.store.start_run()
     started = time.perf_counter()
     results, rows_total, written, errors = [], 0, 0, []

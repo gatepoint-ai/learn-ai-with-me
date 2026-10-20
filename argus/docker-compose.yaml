@@ -145,11 +145,13 @@ services:
       dockerfile: services/analyst/Dockerfile
     ports:
       - "127.0.0.1:8003:8000"
+    # Started, not healthy: the analyst calls these per request, so it should
+    # come up even while a fresh stack is still waiting for its migrations.
     depends_on:
-      prism: { condition: service_healthy }
-      pulse: { condition: service_healthy }
-      sentry: { condition: service_healthy }
-      codex: { condition: service_healthy }
+      prism: { condition: service_started }
+      pulse: { condition: service_started }
+      sentry: { condition: service_started }
+      codex: { condition: service_started }
 
   deck:
     <<: *service
@@ -159,9 +161,9 @@ services:
     ports:
       - "127.0.0.1:3000:8000"
     depends_on:
-      pulse: { condition: service_healthy }
-      sentry: { condition: service_healthy }
-      analyst: { condition: service_healthy }
+      pulse: { condition: service_started }
+      sentry: { condition: service_started }
+      analyst: { condition: service_started }
 
   # --- one-off tasks ------------------------------------------------------------
   # docker compose run --rm tools bootstrap | migrate | seed | compute | accept | status

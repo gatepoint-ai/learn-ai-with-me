@@ -96,11 +96,27 @@ async def lifespan(app: FastAPI):
             f"@{pg.postgres_host}:{pg.postgres_port}/pulse"
         )
     )
-    state.store.sync_definitions(state.kpis)
+    _sync_definitions()
     log.info("pulse_ready", kpis=sorted(state.kpis))
     yield
     state.prism.close()
     state.store.db.close()
+
+
+def _sync_definitions() -> bool:
+    """Mirror KPI config into the database -- tolerating a database not yet migrated.
+
+    On a brand-new stack the service starts before the bootstrap has created its
+    tables. Crashing there would put it in a restart loop until migrations run;
+    instead it starts, says so, and syncs at the start of the first computation.
+    """
+    try:
+        state.store.sync_definitions(state.kpis)
+        return True
+    except Exception as exc:  # psycopg's UndefinedTable, or the database still starting
+        log.warning("definitions_not_synced", reason=str(exc).splitlines()[0][:200],
+                    hint="run: docker compose run --rm tools migrate")
+        return False
 
 
 app = FastAPI(title="Argus Pulse", description="KPI engine", version="0.1.0", lifespan=lifespan)
@@ -148,6 +164,9 @@ def compute(kpi: KpiSpec) -> KpiResult:
 def recalculate(kpi: str | None = None) -> dict[str, Any]:
     """Recompute one KPI, or all of them. Idempotent: safe to run twice."""
     targets = [_kpi(kpi)] if kpi else list(state.kpis.values())
+    if not _sync_definitions():
+        raise HTTPException(503, {"error": "not_migrated",
+                                  "message": "pulse database has no tables yet; run the migrations"})
     results = []
     for spec in targets:
         run_id = state.store.start_run(spec.id)
