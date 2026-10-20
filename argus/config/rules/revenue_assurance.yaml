@@ -36,6 +36,7 @@ rules:
     probes:
       - id: PR-FEED-COMPLETENESS
         name: Feed completeness
+        control: CTL-REV-001
         description: A site reported far fewer events than its own trailing normal -- a lost or partial feed.
         lens: site_volume_baseline
         query:
@@ -66,6 +67,7 @@ rules:
 
       - id: PR-VOLUME-SPIKE
         name: Volume spike
+        control: CTL-REV-002
         description: A site reported far more events than its own trailing normal -- usually duplicate ingestion.
         lens: site_volume_baseline
         query:
@@ -97,6 +99,7 @@ rules:
     probes:
       - id: PR-RATING-ACCURACY
         name: Rating accuracy
+        control: CTL-REV-003
         description: The share of mis-rated events for a customer class rose well above its trailing rate.
         lens: rating_quality
         query:
@@ -127,6 +130,7 @@ rules:
     probes:
       - id: PR-COLLECTION-DRIFT
         name: Write-off drift
+        control: CTL-REV-004
         description: A site wrote off a much larger share of revenue than its trailing normal.
         lens: collection_mix
         query:

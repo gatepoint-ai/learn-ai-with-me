@@ -309,6 +309,10 @@ def forecast(kpi: KpiSpec, points: list[Point]) -> list[ForecastPoint]:
     errors = [values[i] - predict(i) for i in range(season, len(values))]
     spread = 1.96 * (statistics.pstdev(errors) if len(errors) > 1 else 0.0)
 
+    # A rate, a count or an amount that has never been negative cannot go
+    # negative next week either; the band is clipped rather than drawn below 0.
+    floor = 0.0 if min(values) >= 0 else None
+
     step = _step(kpi.grain)
     last = history[-1][0]
     out: list[ForecastPoint] = []
@@ -321,7 +325,7 @@ def forecast(kpi: KpiSpec, points: list[Point]) -> list[ForecastPoint]:
             ForecastPoint(
                 period=_advance(last, step, h),
                 value=value,
-                lower=value - spread * widen,
+                lower=max(floor, value - spread * widen) if floor is not None else value - spread * widen,
                 upper=value + spread * widen,
             )
         )

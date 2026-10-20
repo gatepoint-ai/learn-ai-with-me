@@ -71,3 +71,19 @@ def test_every_denial_names_the_failure_it_prevents():
     assert tools.DENIED
     for d in tools.DENIED:
         assert d["capability"] and len(d["prevents"]) > 20
+
+
+def test_a_figure_from_the_question_is_not_flagged():
+    """Regression: "approve a write-off of 7,000" -- the model repeated the user's figure."""
+    question = "Who has to approve a write-off of 7,000?"
+    answer = "Above 5,000, so 7,000 needs the head of credit control."
+    assert verify.check(answer, [question, {"text": "Above 5,000: the head of credit control"}]).ok
+
+
+def test_flat_query_arguments_become_a_prism_query():
+    box = tools.Toolbox.__new__(tools.Toolbox)
+    sent = {}
+    box._post = lambda svc, path, body: sent.update(body) or {"rows": [], "row_count": 0}
+    box._query_lens({"lens": "usage_trends", "fields": ["site_id"], "order_by": "-site_id"})
+    assert sent["fields"] == [{"field": "site_id"}]
+    assert sent["order_by"] == [{"field": "site_id", "direction": "desc"}]

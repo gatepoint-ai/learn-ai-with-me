@@ -190,3 +190,10 @@ def test_status_respects_direction():
     assert engine.status(higher, 85) == "warning"
     assert engine.status(higher, 70) == "critical"
     assert engine.status(lower, None) == "unknown"
+
+
+def test_forecast_band_never_goes_below_zero_for_a_non_negative_measure():
+    """A rate with one big spike gets a wide band -- but not a negative rate."""
+    values = [2.0, 2.1, 1.9, 2.0, 2.2, 2.0, 1.8] * 3 + [9.0, 8.5, 2.0, 2.1, 1.9, 2.0, 2.0]
+    out = engine.forecast(kpi(direction="neutral"), series(values))
+    assert out and all(f.lower >= 0 for f in out)

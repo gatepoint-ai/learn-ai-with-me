@@ -1,0 +1,12 @@
+id: ask
+title: Ask
+path: /ask
+description: Ask the analyst. Every figure in an answer is checked against the data it came from.
+panels:
+  - type: ask
+    title: Ask the analyst
+    examples:
+      - Which open alerts are critical, and what happened?
+      - SITE-05 has a write-off alert. What should credit control do first?
+      - Who has to approve a write-off of 7,000?
+      - What is the latest leakage rate, and is it normal?

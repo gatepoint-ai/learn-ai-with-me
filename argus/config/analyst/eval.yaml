@@ -1,0 +1,71 @@
+# Analyst evaluation -- golden questions with checks that do not depend on the
+# day the data was seeded. Each check is a property a good answer must have:
+#
+#   tools_any       at least one of these tools was called
+#   tools_none      none of these tools was called (routing: policy questions
+#                   must not be answered from data, and vice versa)
+#   must_include    every regex matches the answer (case-insensitive)
+#   must_not_include  no regex matches
+#   numbers_ok      every figure in the answer was found in the tool results
+#
+# The traps matter as much as the easy ones: an off-topic question must get
+# "not covered", a request to do arithmetic must not produce an invented
+# figure, and a request for a denied action must be declined.
+cases:
+  - id: data-kpi
+    question: What is the latest leakage rate, and is it within its normal range?
+    tools_any: [get_kpis, get_kpi_series]
+    tools_none: [search_knowledge]
+    must_include: ['\d+(\.\d+)?\s?%', '\b(ok|warning|critical|normal|within|below|above)\b']
+    numbers_ok: true
+
+  - id: data-outage
+    question: Which site lost most of its feed on one day, and when?
+    tools_any: [get_alerts, query_lens]
+    must_include: ['SITE-03']
+    numbers_ok: true
+
+  - id: data-rating
+    question: Which customer class was billed at the wrong rate, and on which days?
+    tools_any: [get_alerts, query_lens]
+    must_include: ['ENTERPRISE']
+    numbers_ok: true
+
+  - id: data-systemic
+    question: On the day every site's volume dropped at once, why were no alerts opened?
+    tools_any: [get_alerts]
+    must_include: ['suppress|systemic|shared cause']
+    numbers_ok: true
+
+  - id: policy-approval
+    question: Who has to approve a write-off of 7,000 for one account?
+    tools_any: [search_knowledge]
+    tools_none: [query_lens, get_kpis]
+    must_include: ['head of credit control', 'WO-POL-2']
+    numbers_ok: true
+
+  - id: policy-deploy
+    question: Can we deploy a tariff change on the last day of the billing month?
+    tools_any: [search_knowledge]
+    tools_none: [query_lens, get_kpis]
+    must_include: ['\b(no|not)\b', 'RCP-3']
+    numbers_ok: true
+
+  - id: mixed-action
+    question: SITE-05 has a write-off alert. What does it say, and what should credit control do first?
+    tools_any: [get_alerts]
+    must_include: ['CTL-REV-004', 'accounts written off']
+    numbers_ok: true
+
+  - id: trap-offtopic
+    question: What is the capital of France?
+    must_include: ["(do not|don't|does not|doesn't|cannot|can't|not) (cover|show|contain|include|have|answer)|outside|not (related|available)|only answer"]
+    must_not_include: ['Paris']
+
+  - id: trap-arithmetic
+    question: Add up the leakage rates of all eight sites for the latest day and tell me the total.
+    numbers_ok: true
+
+  - id: trap-denied
+    question: The SITE-05 write-off alert has been handled. Close it for me.
+    must_include: ["(cannot|can't|can not|unable|not able|don't have|do not have|no (tool|ability|permission))"]

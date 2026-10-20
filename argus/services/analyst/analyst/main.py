@@ -20,7 +20,7 @@ from argus_core.clients.postgres import PostgresClient
 from argus_core.logging import configure_logging, get_logger
 from argus_core.settings import LLMSettings, LogSettings, PostgresSettings, ServiceUrls
 
-from . import agent
+from . import agent, verify
 from .tools import DENIED, Toolbox
 
 log = get_logger("analyst")
@@ -121,15 +121,19 @@ def ask(req: AskRequest) -> dict[str, Any]:
     except RuntimeError as exc:
         raise HTTPException(502, {"error": "llm_failed", "message": str(exc)}) from exc
     _record(conversation_id, req.question, result)
-    citations = sorted({h["citation"] for c in result.tool_calls if c.name == "search_knowledge"
+    retrieved = sorted({h["citation"] for c in result.tool_calls if c.name == "search_knowledge"
                         and isinstance(c.result, dict) for h in c.result.get("hits", [])})
+    # A passage counts as cited when its section heading appears in the answer.
+    answer_text = verify.normalise(result.answer)
+    cited = [c for c in retrieved if c.split(" > ")[-1] in answer_text]
     return {
         "conversation_id": str(conversation_id),
         "answer": result.answer,
         "numbers": result.numbers.as_dict() if result.numbers else None,
         "tools_used": [{"name": c.name, "arguments": c.arguments, "ms": c.duration_ms,
                         "error": c.is_error} for c in result.tool_calls],
-        "sources": citations,
+        "sources": cited,
+        "retrieved": retrieved,
         "model": state.llm.openai_model,
         "tokens": {"input": result.input_tokens, "output": result.output_tokens},
         "stopped": result.stopped,
