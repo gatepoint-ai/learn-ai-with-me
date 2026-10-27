@@ -10,12 +10,12 @@ Companion to the LinkedIn article *"The Best AI Safety Control I've Seen Was a M
 
 | # | Decision | The question it answers | Lesson |
 |---|---|---|---|
-| 1 | **The AI never calculates** | Can the model invent a number? | [09](../09-ai-never-calculates/) |
-| 2 | **A catalog, not a keyboard** | Can the model write any query it likes against production data? | coming soon |
+| 1 | **The AI never calculates** | Can the model invent a number? | coming 15 Dec |
+| 2 | **A catalog, not a keyboard** | Can the model write any query it likes against production data? | coming 17 Nov |
 | 3 | **Weight the rules above the model** | What happens when the model gets worse? | |
 | 4 | **Every score ships with its reasons** | Can the person who must act understand *why*? | |
-| 5 | **Autonomy is earned, not granted** | Who decides how much the AI does on its own, and based on what evidence? | coming soon |
-| 6 | **Deny capabilities, don't forbid behaviors** | If the model is tricked, what can it actually do? | coming soon |
+| 5 | **Autonomy is earned, not granted** | Who decides how much the AI does on its own, and based on what evidence? | coming 26 Jan |
+| 6 | **Deny capabilities, don't forbid behaviors** | If the model is tricked, what can it actually do? | coming 9 Feb |
 | 7 | **Decide "good enough" before you build** | How will we know it works, and can the test lie to us? | |
 
 Decision 6 in one picture: the agent proposes, only the gate can approve.
@@ -49,4 +49,4 @@ A one-page checklist:
 
 ---
 
-📣 LinkedIn article: *link added after publishing* · Previous: [01 · No API keys](../01-no-api-keys/) · Next: [03 · The data decides the technique](../03-the-data-decides-the-technique/)
+📣 LinkedIn article: [The Best AI Safety Control I've Seen Was a Missing Tool](https://www.linkedin.com/pulse/best-ai-safety-control-ive-seen-missing-tool-maicon-abreu-moopf) · Previous: [01 · No API keys](../01-no-api-keys/) · Next: 03 · The data decides the technique (coming 3 Nov)
