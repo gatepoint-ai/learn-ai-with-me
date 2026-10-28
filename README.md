@@ -8,34 +8,27 @@ The lessons are about **decisions and trade-offs** — where AI belongs, where i
 
 ## Lessons
 
-| # | Lesson | The idea in one line | Example |
-|---|---|---|---|
-| 01 | [No API keys](01-no-api-keys/) | Give each AI service an identity, not a key: nothing stored, nothing to leak. | Python, no installs |
-| 02 | [Governance is architecture](02-governance-is-architecture/) | The AI governance that matters is a handful of design decisions made early. | Reading guide |
+Thirteen lessons, each with a diagram and, for most, a small example you can run. One goes out on LinkedIn every Tuesday; the last column shows when.
 
-## Coming next
+| # | Lesson | The idea in one line | Example | On LinkedIn |
+|---|---|---|---|---|
+| 01 | [No API keys](01-no-api-keys/) | Give each AI service an identity, not a key: nothing stored, nothing to leak. | Python, no installs | [20 Oct 2026](https://www.linkedin.com/posts/mbdabreu_googlecloud-generativeai-aigovernance-share-7518304897382076416-RaNS/) |
+| 02 | [Governance is architecture](02-governance-is-architecture/) | The AI governance that matters is a handful of design decisions made early. | Reading guide | [27 Oct 2026](https://www.linkedin.com/pulse/best-ai-safety-control-ive-seen-missing-tool-maicon-abreu-moopf) |
+| 03 | [The data decides the technique](03-the-data-decides-the-technique/) | Before choosing a model, check whether the answer already exists in your data. | Decision guide | 3 Nov 2026 |
+| 04 | [RAG for executives](04-rag-for-executives/) | Find the right pages first, answer only from them, cite the source. | Python, no installs | 10 Nov 2026 |
+| 05 | [Catalog, not keyboard](05-catalog-not-keyboard/) | Never let the model write SQL. It fills in a form; the platform writes the query. | Python, no installs | 17 Nov 2026 |
+| 06 | [Two databases, two jobs](06-two-databases-two-jobs/) | Numbers and policies live apart, and the AI reaches them through different tools. | Python, no installs | 24 Nov 2026 |
+| 07 | [Hybrid search](07-hybrid-search/) | Keyword finds exact IDs, vectors find meaning. Blend them, and measure. | Python, no installs | 1 Dec 2026 |
+| 08 | [Argus](08-argus/) | The app where these patterns run together, with its evidence. | The app + carousel | 8 Dec 2026 |
+| 09 | [The AI never calculates](09-ai-never-calculates/) | SQL makes every number; the model writes the words; a check proves it quoted them right. | Python, no installs | 15 Dec 2026 |
+| 10 | [What broke in production](10-what-broke-in-production/) | The model worked. Health checks, restarts and memory didn't. | Python + checklist | 5 Jan 2027 |
+| 11 | [Verified means reconciled](11-verified-means-reconciled/) | Exit code zero isn't verification. Count both sides and explain every difference. | Python, no installs | 12 Jan 2027 |
+| 13 | [Autonomy is earned](13-autonomy-is-earned/) | Let an agent do more only when reviewers stop editing its work. | Python, no installs | 26 Jan 2027 |
+| 15 | [Deny capabilities](15-deny-capabilities/) | "We told the model not to" isn't a control. "The model cannot" is. | Python, no installs | 9 Feb 2027 |
 
-A new lesson every Tuesday, the same day it goes out on LinkedIn.
+Lesson numbers follow the LinkedIn weeks. Weeks 12 and 16 are news weeks and week 14 is a personal story, so they have no lesson folder.
 
-| Date | Lesson |
-|---|---|
-| 3 Nov | The data decides the technique |
-| 10 Nov | RAG for executives |
-| 17 Nov | The model gets a catalog, not a keyboard |
-| 24 Nov | Two databases, two jobs |
-| 1 Dec | Hybrid search: keyword beat embeddings on exact IDs |
-| 8 Dec | Argus: inside the AI revenue-assurance app I built |
-| 15 Dec | The AI never calculates |
-| | *Break for the holidays* |
-| 5 Jan | What broke in production: the AI worked, the operating environment didn't |
-| 12 Jan | Verified means reconciled, not "the script exited zero" |
-| 19 Jan | This week's AI news through a delivery lens |
-| 26 Jan | Autonomy is earned: measure how often reviewers change nothing |
-| 2 Feb | 20 years chasing money that should have come in |
-| 9 Feb | "We told the model not to" isn't a control. "The model cannot" is. |
-| 16 Feb | This week's AI news through a delivery lens |
-
-*Watch or star the repo to get each one when it lands.*
+*Watch or star the repo to follow along.*
 
 ## Argus — the app behind the lessons
 
