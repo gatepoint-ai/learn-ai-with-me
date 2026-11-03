@@ -69,4 +69,4 @@ If you answered "nowhere" to question 2 and "structured" to question 3, you prob
 
 ---
 
-📣 LinkedIn post: 3 Nov 2026 · Previous: [02 · Governance is architecture](../02-governance-is-architecture/) · Next: [04 · RAG for executives](../04-rag-for-executives/)
+📣 LinkedIn post: [3 Nov 2026](https://lnkd.in/p/d6HU8Xjs) · Previous: [02 · Governance is architecture](../02-governance-is-architecture/) · Next: [04 · RAG for executives](../04-rag-for-executives/)
