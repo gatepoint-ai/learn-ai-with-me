@@ -15,7 +15,7 @@ Thirteen lessons, each with a diagram and, for most, a small example you can run
 | 01 | [No API keys](01-no-api-keys/) | Give each AI service an identity, not a key: nothing stored, nothing to leak. | Python, no installs | [20 Oct 2026](https://www.linkedin.com/posts/mbdabreu_googlecloud-generativeai-aigovernance-share-7518304897382076416-RaNS/) |
 | 02 | [Governance is architecture](02-governance-is-architecture/) | The AI governance that matters is a handful of design decisions made early. | Reading guide | [27 Oct 2026](https://www.linkedin.com/pulse/best-ai-safety-control-ive-seen-missing-tool-maicon-abreu-moopf) |
 | 03 | [The data decides the technique](03-the-data-decides-the-technique/) | Before choosing a model, check whether the answer already exists in your data. | Decision guide | [3 Nov 2026](https://lnkd.in/p/d6HU8Xjs) |
-| 04 | [RAG for executives](04-rag-for-executives/) | Find the right pages first, answer only from them, cite the source. | Python, no installs | 10 Nov 2026 |
+| 04 | [RAG for executives](04-rag-for-executives/) | Find the right pages first, answer only from them, cite the source. | Python, no installs | [10 Nov 2026](https://lnkd.in/p/dpvr3Et6) |
 | 05 | [Catalog, not keyboard](05-catalog-not-keyboard/) | Never let the model write SQL. It fills in a form; the platform writes the query. | Python, no installs | 17 Nov 2026 |
 | 06 | [Two databases, two jobs](06-two-databases-two-jobs/) | Numbers and policies live apart, and the AI reaches them through different tools. | Python, no installs | 24 Nov 2026 |
 | 07 | [Hybrid search](07-hybrid-search/) | Keyword finds exact IDs, vectors find meaning. Blend them, and measure. | Python, no installs | 1 Dec 2026 |

@@ -69,4 +69,4 @@ To keep it dependency-free, the example searches with simple keyword scoring (TF
 
 ---
 
-📣 LinkedIn post: 10 Nov 2026 · Previous: [03 · The data decides the technique](../03-the-data-decides-the-technique/) · Next: [05 · Catalog, not keyboard](../05-catalog-not-keyboard/)
+📣 LinkedIn post: [10 Nov 2026](https://lnkd.in/p/dpvr3Et6) · Previous: [03 · The data decides the technique](../03-the-data-decides-the-technique/) · Next: [05 · Catalog, not keyboard](../05-catalog-not-keyboard/)
