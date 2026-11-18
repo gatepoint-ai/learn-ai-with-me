@@ -75,4 +75,4 @@ A stand-in router plays the model, using the "use for" words. A real model reads
 
 ---
 
-📣 LinkedIn post: 24 Nov 2026 · Previous: [05 · Catalog, not keyboard](../05-catalog-not-keyboard/) · Next: [07 · Hybrid search](../07-hybrid-search/)
+📣 LinkedIn post: 1 Dec 2026 · Previous: [05 · Catalog, not keyboard](../05-catalog-not-keyboard/) · Next: [07 · Hybrid search](../07-hybrid-search/)

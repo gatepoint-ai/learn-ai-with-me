@@ -74,4 +74,4 @@ It applies the promotion policy to five review records:
 
 ---
 
-📣 LinkedIn post: 26 Jan 2027 · Previous: [11 · Verified means reconciled](../11-verified-means-reconciled/) · Next: [15 · Deny capabilities](../15-deny-capabilities/)
+📣 LinkedIn post: 2 Feb 2027 · Previous: [11 · Verified means reconciled](../11-verified-means-reconciled/) · Next: [15 · Deny capabilities](../15-deny-capabilities/)

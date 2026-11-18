@@ -64,4 +64,4 @@ Argus needs Docker. The [Argus README](../argus/README.md) has the commands, and
 
 ---
 
-📣 LinkedIn post: 8 Dec 2026 · Previous: [07 · Hybrid search](../07-hybrid-search/) · Next: [09 · The AI never calculates](../09-ai-never-calculates/)
+📣 LinkedIn post: 15 Dec 2026 · Previous: [07 · Hybrid search](../07-hybrid-search/) · Next: [09 · The AI never calculates](../09-ai-never-calculates/)

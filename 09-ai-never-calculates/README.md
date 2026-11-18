@@ -76,4 +76,4 @@ To use a real model, replace `stand_in_llm_writes_summary()` with a call to your
 
 ---
 
-📣 LinkedIn post: 15 Dec 2026 · Previous: [08 · Argus](../08-argus/) · Next: [10 · What broke in production](../10-what-broke-in-production/)
+📣 LinkedIn post: 5 Jan 2027 · Previous: [08 · Argus](../08-argus/) · Next: [10 · What broke in production](../10-what-broke-in-production/)
