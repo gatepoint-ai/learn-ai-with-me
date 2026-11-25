@@ -48,7 +48,7 @@ python rag.py
 
 It answers three questions **with a citation** and declines the fourth (*"What is our policy on remote work?"*), because nothing in the documents covers it. It also prints the prompt a real system would send to a language model.
 
-To keep it dependency-free, the example searches with simple keyword scoring (TF-IDF). Real systems use embeddings and often combine both (hybrid search).
+To keep it dependency-free, the example searches with simple keyword scoring (TF-IDF). Real systems use embeddings and often combine both: that's [lesson 07](../07-hybrid-search/).
 
 *Tested with Python 3.12.10 on Windows, 28 Oct 2026.*
 
@@ -69,4 +69,4 @@ To keep it dependency-free, the example searches with simple keyword scoring (TF
 
 ---
 
-📣 LinkedIn post: [10 Nov 2026](https://lnkd.in/p/dpvr3Et6) · Previous: [03 · The data decides the technique](../03-the-data-decides-the-technique/)
+📣 LinkedIn post: [10 Nov 2026](https://lnkd.in/p/dpvr3Et6) · Previous: [03 · The data decides the technique](../03-the-data-decides-the-technique/) · Next: [05 · Catalog, not keyboard](../05-catalog-not-keyboard/)
