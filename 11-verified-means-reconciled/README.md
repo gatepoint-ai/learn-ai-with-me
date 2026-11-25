@@ -75,4 +75,4 @@ It walks through the steps:
 
 ---
 
-📣 LinkedIn post: 19 Jan 2027 · Previous: [10 · What broke in production](../10-what-broke-in-production/) · Next: [13 · Autonomy is earned](../13-autonomy-is-earned/)
+Previous: [10 · What broke in production](../10-what-broke-in-production/) · Next: [13 · Autonomy is earned](../13-autonomy-is-earned/)

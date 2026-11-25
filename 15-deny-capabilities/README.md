@@ -86,4 +86,4 @@ A stand-in agent compiles a two-line price list from a spreadsheet. One cell car
 
 ---
 
-📣 LinkedIn post: 16 Feb 2027 · Previous: [13 · Autonomy is earned](../13-autonomy-is-earned/) · Back to [all lessons](../README.md)
+Previous: [13 · Autonomy is earned](../13-autonomy-is-earned/) · Back to [all lessons](../README.md)

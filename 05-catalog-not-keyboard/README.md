@@ -72,4 +72,4 @@ It plays the model's part with five requests:
 
 ---
 
-📣 LinkedIn post: 24 Nov 2026 · Previous: [04 · RAG for executives](../04-rag-for-executives/) · Next: [06 · Two databases, two jobs](../06-two-databases-two-jobs/)
+Previous: [04 · RAG for executives](../04-rag-for-executives/) · Next: [06 · Two databases, two jobs](../06-two-databases-two-jobs/)

@@ -2,13 +2,13 @@
 
 **Practical lessons from delivering real AI systems — for project managers, delivery leads and anyone who has to make AI work in a business, not just in a demo.**
 
-I'm [Maicon Abreu](https://www.linkedin.com/in/mbdabreu/), a Senior Technical Project Manager (PMP, Google Cloud Generative AI Leader) with 20+ years in revenue assurance, fraud and data & AI delivery. Every week I post one lesson on LinkedIn. This repo holds the full version: the idea, a diagram, a small example you can run, and the best free courses and documentation I've found.
+I'm [Maicon Abreu](https://www.linkedin.com/in/mbdabreu/), a Senior Technical Project Manager (PMP, Google Cloud Generative AI Leader) with 20+ years in revenue assurance, fraud and data & AI delivery. I post lessons on LinkedIn, and this repo holds the full version: the idea, a diagram, a small example you can run, and the best free courses and documentation I've found.
 
 The lessons are about **decisions and trade-offs** — where AI belongs, where it must not go, and how you'll know it works. You don't need to be an engineer to follow them. The examples are short and readable if you want to look under the hood.
 
 ## Lessons
 
-Thirteen lessons, each with a diagram and, for most, a small example you can run. One goes out on LinkedIn every Tuesday; the last column shows when.
+Thirteen lessons, each with a diagram and, for most, a small example you can run. Where a lesson has a LinkedIn post, the last column links it.
 
 | # | Lesson | The idea in one line | Example | On LinkedIn |
 |---|---|---|---|---|
@@ -16,17 +16,17 @@ Thirteen lessons, each with a diagram and, for most, a small example you can run
 | 02 | [Governance is architecture](02-governance-is-architecture/) | The AI governance that matters is a handful of design decisions made early. | Reading guide | [27 Oct 2026](https://www.linkedin.com/pulse/best-ai-safety-control-ive-seen-missing-tool-maicon-abreu-moopf) |
 | 03 | [The data decides the technique](03-the-data-decides-the-technique/) | Before choosing a model, check whether the answer already exists in your data. | Decision guide | [3 Nov 2026](https://lnkd.in/p/d6HU8Xjs) |
 | 04 | [RAG for executives](04-rag-for-executives/) | Find the right pages first, answer only from them, cite the source. | Python, no installs | [10 Nov 2026](https://lnkd.in/p/dpvr3Et6) |
-| 05 | [Catalog, not keyboard](05-catalog-not-keyboard/) | Never let the model write SQL. It fills in a form; the platform writes the query. | Python, no installs | 24 Nov 2026 |
-| 06 | [Two databases, two jobs](06-two-databases-two-jobs/) | Numbers and policies live apart, and the AI reaches them through different tools. | Python, no installs | 1 Dec 2026 |
-| 07 | [Hybrid search](07-hybrid-search/) | Keyword finds exact IDs, vectors find meaning. Blend them, and measure. | Python, no installs | 8 Dec 2026 |
-| 08 | [Argus](08-argus/) | The app where these patterns run together, with its evidence. | The app + carousel | 15 Dec 2026 |
-| 09 | [The AI never calculates](09-ai-never-calculates/) | SQL makes every number; the model writes the words; a check proves it quoted them right. | Python, no installs | 5 Jan 2027 |
-| 10 | [What broke in production](10-what-broke-in-production/) | The model worked. Health checks, restarts and memory didn't. | Python + checklist | 12 Jan 2027 |
-| 11 | [Verified means reconciled](11-verified-means-reconciled/) | Exit code zero isn't verification. Count both sides and explain every difference. | Python, no installs | 19 Jan 2027 |
-| 13 | [Autonomy is earned](13-autonomy-is-earned/) | Let an agent do more only when reviewers stop editing its work. | Python, no installs | 2 Feb 2027 |
-| 15 | [Deny capabilities](15-deny-capabilities/) | "We told the model not to" isn't a control. "The model cannot" is. | Python, no installs | 16 Feb 2027 |
+| 05 | [Catalog, not keyboard](05-catalog-not-keyboard/) | Never let the model write SQL. It fills in a form; the platform writes the query. | Python, no installs | — |
+| 06 | [Two databases, two jobs](06-two-databases-two-jobs/) | Numbers and policies live apart, and the AI reaches them through different tools. | Python, no installs | — |
+| 07 | [Hybrid search](07-hybrid-search/) | Keyword finds exact IDs, vectors find meaning. Blend them, and measure. | Python, no installs | — |
+| 08 | [Argus](08-argus/) | The app where these patterns run together, with its evidence. | The app + carousel | — |
+| 09 | [The AI never calculates](09-ai-never-calculates/) | SQL makes every number; the model writes the words; a check proves it quoted them right. | Python, no installs | — |
+| 10 | [What broke in production](10-what-broke-in-production/) | The model worked. Health checks, restarts and memory didn't. | Python + checklist | — |
+| 11 | [Verified means reconciled](11-verified-means-reconciled/) | Exit code zero isn't verification. Count both sides and explain every difference. | Python, no installs | — |
+| 13 | [Autonomy is earned](13-autonomy-is-earned/) | Let an agent do more only when reviewers stop editing its work. | Python, no installs | — |
+| 15 | [Deny capabilities](15-deny-capabilities/) | "We told the model not to" isn't a control. "The model cannot" is. | Python, no installs | — |
 
-Lesson numbers follow the LinkedIn weeks. Weeks 12 and 16 are news weeks and week 14 is a personal story, so they have no lesson folder.
+Numbers 12, 14 and 16 have no lesson folder.
 
 *Watch or star the repo to follow along.*
 

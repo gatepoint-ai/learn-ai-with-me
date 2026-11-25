@@ -81,4 +81,4 @@ It loads a knowledge base three ways:
 
 ---
 
-📣 LinkedIn post: 12 Jan 2027 · Previous: [09 · The AI never calculates](../09-ai-never-calculates/) · Next: [11 · Verified means reconciled](../11-verified-means-reconciled/)
+Previous: [09 · The AI never calculates](../09-ai-never-calculates/) · Next: [11 · Verified means reconciled](../11-verified-means-reconciled/)

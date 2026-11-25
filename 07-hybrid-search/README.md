@@ -75,4 +75,4 @@ Real systems get "meaning" from an embedding model. To stay dependency-free, the
 
 ---
 
-📣 LinkedIn post: 8 Dec 2026 · Previous: [06 · Two databases, two jobs](../06-two-databases-two-jobs/) · Next: [08 · Argus](../08-argus/)
+Previous: [06 · Two databases, two jobs](../06-two-databases-two-jobs/) · Next: [08 · Argus](../08-argus/)
